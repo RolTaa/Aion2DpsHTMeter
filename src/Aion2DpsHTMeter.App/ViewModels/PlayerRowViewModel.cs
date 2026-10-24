@@ -42,7 +42,7 @@ public sealed class PlayerRowViewModel : ObservableObject
         ClassBrush = ClassPalette.Of(c.Class);
         IsSelf = c.IsSelf;
 
-        DpsText = Kilo(c.Dps);
+        DpsText = Kilo(c.Dps) + "/" + Kilo(c.Damage);
         HealText = Kilo(c.Healing);
         TakenText = Kilo(c.DamageTaken);
 

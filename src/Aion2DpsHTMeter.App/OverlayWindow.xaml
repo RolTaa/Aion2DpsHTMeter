@@ -134,6 +134,8 @@
                                Padding="0" VerticalAlignment="Center" />
                         <ComboBox x:Name="SortBox" ItemsSource="{Binding SortOptions}" SelectedItem="{Binding Sort}" DisplayMemberPath="Label"
                                   MinWidth="140" Height="26" FontSize="12" Margin="8,0,0,0" />
+                        <CheckBox Content="PTメンバーのみ" IsChecked="{Binding PartyOnly}" Foreground="{StaticResource TextMuted}"
+                                  FontSize="11" Margin="12,0,0,0" VerticalAlignment="Center" />
                     </StackPanel>
                 </StackPanel>
             </Border>
@@ -146,7 +148,7 @@
             <!-- Party totals -->
             <UniformGrid Columns="3" Background="#0AFFFFFF">
                 <StackPanel Margin="12,8">
-                    <TextBlock Text="PT合計 DPS" FontSize="10" Foreground="{StaticResource TextMuted}" />
+                    <TextBlock Text="DPS/合計ダメージ" FontSize="10" Foreground="{StaticResource TextMuted}" />
                     <TextBlock Text="{Binding TotalDps}" FontFamily="{StaticResource NumberFont}" FontSize="12" FontWeight="Bold" Foreground="{StaticResource DpsText}" />
                 </StackPanel>
                 <StackPanel Margin="12,8">

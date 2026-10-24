@@ -3,6 +3,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using Aion2DpsHTMeter.App.Services;
 using AionMeter.Core;
+using AionMeter.Core.Capture;
 using AionMeter.Core.Combat;
 
 namespace Aion2DpsHTMeter.App.ViewModels;
@@ -58,6 +59,17 @@ public sealed class OverlayViewModel : ObservableObject
         }
     }
 
+    public bool PartyOnly
+    {
+        get => _settings.PartyOnly;
+        set
+        {
+            if (_settings.PartyOnly == value) return;
+            _settings.PartyOnly = value;
+            Refresh();
+        }
+    }
+
     /// <summary>Rows in display order.</summary>
     public ObservableCollection<PlayerRowViewModel> Players { get; } = [];
 
@@ -92,7 +104,7 @@ public sealed class OverlayViewModel : ObservableObject
     private void Refresh()
     {
         _meter.Tick();
-        var snap = _meter.Snapshot();
+        var snap = _meter.BossFight();
         if (snap is null)
         {
             ShowEmpty();
@@ -106,9 +118,10 @@ public sealed class OverlayViewModel : ObservableObject
         BossHp = snap.Boss?.HpFraction ?? 0;
         BossHpText = HasBoss ? "HP " + Format.Percent(BossHp) : "";
 
-        var combatants = SortBy(snap.Combatants, _sort.Key);
+        var shown = PartyOnly ? snap.Combatants.Where(_meter.IsPartyMember) : snap.Combatants;
+        var combatants = SortBy(shown, _sort.Key);
         UpdateRows(combatants);
-        TotalDps = PlayerRowViewModel.Kilo(snap.PartyDps);
+        TotalDps = PlayerRowViewModel.Kilo(combatants.Sum(c => c.Dps)) + "/" + PlayerRowViewModel.Kilo(combatants.Sum(c => c.Damage));
         TotalHeal = PlayerRowViewModel.Kilo(combatants.Sum(c => c.Healing));
         TotalTaken = PlayerRowViewModel.Kilo(combatants.Sum(c => c.DamageTaken));
     }
@@ -153,7 +166,8 @@ public sealed class OverlayViewModel : ObservableObject
     {
         _rows.Clear();
         Players.Clear();
-        Status = _meter.CaptureStatus.Message;
+        var capture = _meter.CaptureStatus;
+        Status = capture.State == CaptureState.Capturing ? "ボス戦の開始を待っています" : capture.Message;
         Clock = "00:00";
         HasBoss = false;
         BossName = "";

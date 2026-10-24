@@ -27,6 +27,9 @@
 | `src/AionMeter.Core/Combat/CombatTracker.cs` | `BuildSnapshot` で `c.Healing` を渡す |
 | `src/AionMeter.Core/Protocol/FrameDecoder.cs` | LZ4 展開先を `ArrayPool` の貸し借りから `new byte[]` に変更(読みやすさ優先) |
 | `src/AionMeter.Core/Protocol/PacketParser.cs` | 同上 |
+| `src/AionMeter.Core/Combat/CombatTracker.cs` | 回復の集計を修正: 味方への回復(プレイヤー→プレイヤーのダメージ記録)を回復として数える、回復だけのプレイヤーにも行を作る、MP回復と敵の自己回復は除外(A2Tools-DPS-Meter の読み方に合わせた) |
+| `src/AionMeter.Core/Game/GameData.cs` | `resource_restore_skills.json`(MP等だけを回復するスキル)を読み込む |
+| `data/resource_restore_skills.json` | 追加。A2Tools-DPS-Meter `src/data/resource_restore_skills.json`(commit `705287b`)を配列形式に変換 |
 
 ## 上流の更新を取り込む手順
 
