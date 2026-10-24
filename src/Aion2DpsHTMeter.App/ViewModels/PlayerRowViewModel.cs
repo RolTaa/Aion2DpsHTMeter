@@ -42,7 +42,7 @@ public sealed class PlayerRowViewModel : ObservableObject
         ClassBrush = ClassPalette.Of(c.Class);
         IsSelf = c.IsSelf;
 
-        DpsText = Kilo(c.Dps) + "/" + Kilo(c.Damage);
+        DpsText = Kilo(c.Dps) + "/" + WholeKilo(c.Damage);
         HealText = Kilo(c.Healing);
         TakenText = Kilo(c.DamageTaken);
 
@@ -53,6 +53,9 @@ public sealed class PlayerRowViewModel : ObservableObject
 
     /// <summary>Every number in thousands with one decimal: 52840 → 52.8K, 1120000 → 1,120.0K.</summary>
     public static string Kilo(double value) => (value / 1000).ToString("#,0.0", CultureInfo.InvariantCulture) + "K";
+
+    /// <summary>Thousands without decimals, for total damage: 8137420 → 8,137K.</summary>
+    public static string WholeKilo(double value) => (value / 1000).ToString("#,0", CultureInfo.InvariantCulture) + "K";
 
     private static double Ratio(double value, double max) => max > 0 ? Math.Clamp(value / max, 0, 1) : 0;
 }

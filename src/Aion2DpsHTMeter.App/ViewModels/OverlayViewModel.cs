@@ -121,7 +121,7 @@ public sealed class OverlayViewModel : ObservableObject
         var shown = PartyOnly ? snap.Combatants.Where(_meter.IsPartyMember) : snap.Combatants;
         var combatants = SortBy(shown, _sort.Key);
         UpdateRows(combatants);
-        TotalDps = PlayerRowViewModel.Kilo(combatants.Sum(c => c.Dps)) + "/" + PlayerRowViewModel.Kilo(combatants.Sum(c => c.Damage));
+        TotalDps = PlayerRowViewModel.Kilo(combatants.Sum(c => c.Dps)) + "/" + PlayerRowViewModel.WholeKilo(combatants.Sum(c => c.Damage));
         TotalHeal = PlayerRowViewModel.Kilo(combatants.Sum(c => c.Healing));
         TotalTaken = PlayerRowViewModel.Kilo(combatants.Sum(c => c.DamageTaken));
     }
