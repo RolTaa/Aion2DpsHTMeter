@@ -1,0 +1,44 @@
+<Application x:Class="Aion2DpsHTMeter.App.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             ShutdownMode="OnMainWindowClose">
+    <Application.Resources>
+        <FontFamily x:Key="UiFont">Yu Gothic UI, Meiryo UI, Segoe UI</FontFamily>
+        <FontFamily x:Key="NumberFont">Consolas, Cascadia Mono</FontFamily>
+
+        <SolidColorBrush x:Key="TextStrong" Color="#F4F6FA" />
+        <SolidColorBrush x:Key="TextMuted" Color="#9AA3B5" />
+        <SolidColorBrush x:Key="Track" Color="#0DFFFFFF" />
+        <SolidColorBrush x:Key="DpsBar" Color="#9C5A1C" />
+        <SolidColorBrush x:Key="HealBar" Color="#2FA86A" />
+        <SolidColorBrush x:Key="TakenBar" Color="#5D78E0" />
+        <SolidColorBrush x:Key="HealText" Color="#7FE0A8" />
+        <SolidColorBrush x:Key="TakenText" Color="#A9BBFF" />
+        <SolidColorBrush x:Key="DpsText" Color="#F2A65A" />
+
+        <Style x:Key="IconButton" TargetType="Button">
+            <Setter Property="Width" Value="28" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="Margin" Value="6,0,0,0" />
+            <Setter Property="Foreground" Value="#C3C9D6" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="Transparent" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#1FFFFFFF" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.4" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Application.Resources>
+</Application>
