@@ -1,4 +1,4 @@
-using System.Buffers.Binary;
+﻿using System.Buffers.Binary;
 using System.Text;
 using AionMeter.Core.Events;
 using AionMeter.Core.Game;
@@ -129,19 +129,12 @@ public sealed class PacketParser
                 if (len < 12 || end > b.Length) continue;
                 var raw = Wire.U32(b, i + 2);
                 if (raw is 0 or > FrameDecoder.MaxBundle) continue;
-                var target = System.Buffers.ArrayPool<byte>.Shared.Rent((int)raw);
-                try
-                {
-                    var decoded = K4os.Compression.LZ4.LZ4Codec.Decode(b[(i + 6)..(int)end], target.AsSpan(0, (int)raw));
-                    if (decoded <= 0) continue;
-                    EmbeddedBundles++;
-                    ScanForIdentities(target.AsSpan(0, decoded));
-                    ScanForRoster(target.AsSpan(0, decoded));
-                }
-                finally
-                {
-                    System.Buffers.ArrayPool<byte>.Shared.Return(target);
-                }
+                var target = new byte[raw];
+                var decoded = K4os.Compression.LZ4.LZ4Codec.Decode(b[(i + 6)..(int)end], target);
+                if (decoded <= 0) continue;
+                EmbeddedBundles++;
+                ScanForIdentities(target.AsSpan(0, decoded));
+                ScanForRoster(target.AsSpan(0, decoded));
                 i = (int)end - 1;
                 break;
             }

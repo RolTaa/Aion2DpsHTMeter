@@ -25,6 +25,8 @@
 |---|---|
 | `src/AionMeter.Core/Combat/Snapshots.cs` | `CombatantSnapshot` の末尾に `long Healing = 0` を追加 |
 | `src/AionMeter.Core/Combat/CombatTracker.cs` | `BuildSnapshot` で `c.Healing` を渡す |
+| `src/AionMeter.Core/Protocol/FrameDecoder.cs` | LZ4 展開先を `ArrayPool` の貸し借りから `new byte[]` に変更(読みやすさ優先) |
+| `src/AionMeter.Core/Protocol/PacketParser.cs` | 同上 |
 
 ## 上流の更新を取り込む手順
 

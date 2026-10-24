@@ -1,5 +1,4 @@
-using System.Buffers;
-using K4os.Compression.LZ4;
+﻿using K4os.Compression.LZ4;
 
 namespace AionMeter.Core.Protocol;
 
@@ -179,21 +178,14 @@ public sealed class FrameDecoder
                 BadBundles++;
                 return;
             }
-            var target = ArrayPool<byte>.Shared.Rent((int)rawSize);
-            try
+            var target = new byte[rawSize];
+            var n = LZ4Codec.Decode(frame[o..], target);
+            if (n <= 0)
             {
-                var n = LZ4Codec.Decode(frame[o..], target.AsSpan(0, (int)rawSize));
-                if (n <= 0)
-                {
-                    BadBundles++;
-                    return;
-                }
-                WalkInner(target.AsSpan(0, n), depth + 1);
+                BadBundles++;
+                return;
             }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(target);
-            }
+            WalkInner(target.AsSpan(0, n), depth + 1);
             return;
         }
 

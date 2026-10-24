@@ -16,6 +16,23 @@
         <SolidColorBrush x:Key="TakenText" Color="#A9BBFF" />
         <SolidColorBrush x:Key="DpsText" Color="#F2A65A" />
 
+        <!-- Flat bar: value 0–1, the filled part grows from the left -->
+        <Style x:Key="MeterBar" TargetType="ProgressBar">
+            <Setter Property="Minimum" Value="0" />
+            <Setter Property="Maximum" Value="1" />
+            <Setter Property="Background" Value="{StaticResource Track}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ProgressBar">
+                        <Grid>
+                            <Border x:Name="PART_Track" Background="{TemplateBinding Background}" />
+                            <Rectangle x:Name="PART_Indicator" Fill="{TemplateBinding Foreground}" HorizontalAlignment="Left" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="IconButton" TargetType="Button">
             <Setter Property="Width" Value="28" />
             <Setter Property="Height" Value="28" />

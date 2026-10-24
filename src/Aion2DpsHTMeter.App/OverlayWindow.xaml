@@ -41,14 +41,8 @@
 
                     <StackPanel Grid.Column="1">
                         <!-- DPS bar (3) with the name and the three values on top -->
-                        <Grid Height="24" Background="{StaticResource Track}">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="{Binding DpsFill}" />
-                                    <ColumnDefinition Width="{Binding DpsRest}" />
-                                </Grid.ColumnDefinitions>
-                                <Rectangle Fill="{StaticResource DpsBar}" />
-                            </Grid>
+                        <Grid Height="24">
+                            <ProgressBar Style="{StaticResource MeterBar}" Value="{Binding DpsBar, Mode=OneWay}" Foreground="{StaticResource DpsBar}" />
                             <DockPanel Margin="8,0" LastChildFill="True">
                                 <DockPanel.Effect>
                                     <DropShadowEffect ShadowDepth="1" BlurRadius="2" Opacity="0.8" Color="Black" />
@@ -64,22 +58,10 @@
                         </Grid>
 
                         <!-- Healing bar (1) -->
-                        <Grid Height="8" Background="{StaticResource Track}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="{Binding HealFill}" />
-                                <ColumnDefinition Width="{Binding HealRest}" />
-                            </Grid.ColumnDefinitions>
-                            <Rectangle Fill="{StaticResource HealBar}" />
-                        </Grid>
+                        <ProgressBar Height="8" Style="{StaticResource MeterBar}" Value="{Binding HealBar, Mode=OneWay}" Foreground="{StaticResource HealBar}" />
 
                         <!-- Damage-taken bar (1) -->
-                        <Grid Height="8" Background="{StaticResource Track}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="{Binding TakenFill}" />
-                                <ColumnDefinition Width="{Binding TakenRest}" />
-                            </Grid.ColumnDefinitions>
-                            <Rectangle Fill="{StaticResource TakenBar}" />
-                        </Grid>
+                        <ProgressBar Height="8" Style="{StaticResource MeterBar}" Value="{Binding TakenBar, Mode=OneWay}" Foreground="{StaticResource TakenBar}" />
                     </StackPanel>
                 </Grid>
             </Border>
@@ -143,8 +125,8 @@
                         </DockPanel.Style>
                         <TextBlock DockPanel.Dock="Right" Text="{Binding BossHpText}" FontFamily="{StaticResource NumberFont}" FontSize="11"
                                    Foreground="#C3C9D6" Margin="8,0,0,0" />
-                        <ProgressBar Height="6" Minimum="0" Maximum="1" Value="{Binding BossHp, Mode=OneWay}"
-                                     Foreground="#D9534F" Background="#1AFFFFFF" BorderThickness="0" VerticalAlignment="Center" />
+                        <ProgressBar Height="6" Style="{StaticResource MeterBar}" Value="{Binding BossHp, Mode=OneWay}"
+                                     Foreground="#D9534F" Background="#1AFFFFFF" VerticalAlignment="Center" />
                     </DockPanel>
 
                     <StackPanel Orientation="Horizontal" Margin="0,6,0,0">

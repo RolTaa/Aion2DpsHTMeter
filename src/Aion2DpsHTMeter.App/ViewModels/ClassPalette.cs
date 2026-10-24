@@ -3,29 +3,30 @@ using AionMeter.Core.Events;
 
 namespace Aion2DpsHTMeter.App.ViewModels;
 
-/// <summary>Colour of the class bar at the left of each row (same values as the UI mockup).</summary>
+/// <summary>
+/// Colour of the class bar at the left of each row. Values from A2Tools-DPS-Meter's jobColorMap
+/// (public/src/js/core.js), which follow the hues of the in-game class emblems.
+/// </summary>
 public static class ClassPalette
 {
-    private static readonly Dictionary<GameClass, SolidColorBrush> Brushes = new()
+    private static readonly Dictionary<GameClass, string> Hex = new()
     {
-        [GameClass.Gladiator] = Make(0xE8, 0xA3, 0x3D),    // 剣星
-        [GameClass.Templar] = Make(0x5B, 0x8D, 0xEF),      // 守護星
-        [GameClass.Assassin] = Make(0xB0, 0x5C, 0xE0),     // 殺星
-        [GameClass.Ranger] = Make(0x6C, 0xCB, 0x5F),       // 弓星
-        [GameClass.Sorcerer] = Make(0xE8, 0x57, 0x4A),     // 魔道星
-        [GameClass.Elementalist] = Make(0x3E, 0xC6, 0xC6), // 精霊星
-        [GameClass.Cleric] = Make(0xEF, 0xE3, 0xBD),       // 治癒星
-        [GameClass.Chanter] = Make(0xE0, 0x7A, 0xB8),      // 護法星
-        [GameClass.Brawler] = Make(0xC7, 0xD3, 0x6B),
+        [GameClass.Gladiator] = "#4FD1C5",    // 剣星
+        [GameClass.Templar] = "#5F8CFF",      // 守護星
+        [GameClass.Assassin] = "#7BE35A",     // 殺星
+        [GameClass.Ranger] = "#41D98A",       // 弓星
+        [GameClass.Sorcerer] = "#9A6BFF",     // 魔道星
+        [GameClass.Elementalist] = "#E06BFF", // 精霊星
+        [GameClass.Cleric] = "#F2C15A",       // 治癒星
+        [GameClass.Chanter] = "#FF9A3D",      // 護法星
+        [GameClass.Brawler] = "#E85D5D",      // 拳星
     };
 
-    private static readonly SolidColorBrush Unknown = Make(0x6B, 0x72, 0x80);
+    private const string UnknownHex = "#94A3B8";
 
-    public static SolidColorBrush Of(GameClass c) => Brushes.TryGetValue(c, out var b) ? b : Unknown;
-
-    private static SolidColorBrush Make(byte r, byte g, byte b)
+    public static Brush Of(GameClass c)
     {
-        var brush = new SolidColorBrush(Color.FromRgb(r, g, b));
+        var brush = (SolidColorBrush)new BrushConverter().ConvertFromString(Hex.GetValueOrDefault(c, UnknownHex))!;
         brush.Freeze();
         return brush;
     }
