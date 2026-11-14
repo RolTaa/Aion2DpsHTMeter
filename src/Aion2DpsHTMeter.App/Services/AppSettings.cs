@@ -28,6 +28,9 @@ public sealed class AppSettings
 
     public SortKey SortKey { get; set; } = SortKey.Dps;
 
+    /// <summary>Show only the local player and the party members (other players fighting the same boss are hidden).</summary>
+    public bool PartyOnly { get; set; } = true;
+
     /// <summary>Npcap device to force (VPN / ping accelerator users). Null = pick from the game's connections.</summary>
     public string? CaptureDevice { get; set; }
 

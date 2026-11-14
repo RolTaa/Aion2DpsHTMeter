@@ -201,9 +201,19 @@ public sealed class CombatTracker
     {
         if (d.Damage <= 0 || d.Damage > Options.MaxSingleHit * Math.Max(1, d.HitCount)) return;
 
+        var source = _entities.ResolveOwner(d.SourceId);
+
+        // A player's record on another player is a heal: the heal on an ally rides in the damage packet
+        // (as A2Tools-DPS-Meter reads it).
+        var targetOwner = _entities.ResolveOwner(d.TargetId);
+        if (source != targetOwner && IsLikelyPlayer(source) && IsLikelyPlayer(targetOwner))
+        {
+            AddHealing(source, d.SkillCode, d.Damage);
+            return;
+        }
+
         if (_data.IsNonDamageSkill(d.SkillCode)) return; // heals and spirit-link records ride in damage packets too
 
-        var source = _entities.ResolveOwner(d.SourceId);
         var target = d.TargetId;
         // A player's own pet is never an enemy (nor is anyone's spirit / skill effect whose owner is still unknown).
         if (source == target || _entities.IsSummon(target) || _entities.IsUnowned(target)) return;
@@ -281,11 +291,17 @@ public sealed class CombatTracker
             enc.Attackers.Add(actor);
     }
 
-    private void OnHeal(HealEvent h)
+    private void OnHeal(HealEvent h) => AddHealing(_entities.ResolveOwner(h.SourceId), h.SkillCode, h.Amount);
+
+    /// <summary>
+    /// Credits a heal to the healer in the running fight. A healer who has not hit anything yet still gets a row;
+    /// mobs healing themselves and MP restores are not counted.
+    /// </summary>
+    private void AddHealing(uint healer, int skillCode, long amount)
     {
         if (_current is not { IsActive: true } enc) return;
-        var source = _entities.ResolveOwner(h.SourceId);
-        if (enc.Combatants.TryGetValue(source, out var c)) c.Healing += h.Amount;
+        if (_data.ResourceRestoreSkills.Contains(skillCode) || !IsLikelyPlayer(healer)) return;
+        GetCombatant(enc, healer).Healing += amount;
     }
 
     private void OnNpcHp(NpcHpEvent e)

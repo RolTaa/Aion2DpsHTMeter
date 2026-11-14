@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using AionMeter.Core.Events;
 
 namespace AionMeter.Core.Game;
@@ -17,6 +17,8 @@ public sealed class GameData
     public Dictionary<int, NpcDef> Npcs { get; private set; } = new();
     public HashSet<int> DotSkills { get; } = new();
     public HashSet<int> HealSkills { get; } = new();
+    /// <summary>Skills that restore only MP or another resource, never HP: their records carry an amount like a heal.</summary>
+    public HashSet<int> ResourceRestoreSkills { get; } = new();
     public Dictionary<int, string> Maps { get; private set; } = new();
     public Dictionary<int, string> Servers { get; private set; } = new();
 
@@ -77,6 +79,7 @@ public sealed class GameData
 
         ReadIntArray(Path.Combine(directory, "dot_skill_ids.json"), data.DotSkills);
         ReadIntArray(Path.Combine(directory, "healing_skill_ids.json"), data.HealSkills);
+        ReadIntArray(Path.Combine(directory, "resource_restore_skills.json"), data.ResourceRestoreSkills);
         return data;
     }
 

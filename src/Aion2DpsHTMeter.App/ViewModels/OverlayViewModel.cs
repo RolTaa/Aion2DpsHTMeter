@@ -1,7 +1,9 @@
+using System.Collections.ObjectModel;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Aion2DpsHTMeter.App.Services;
 using AionMeter.Core;
+using AionMeter.Core.Capture;
 using AionMeter.Core.Combat;
 
 namespace Aion2DpsHTMeter.App.ViewModels;
@@ -15,7 +17,9 @@ public sealed class OverlayViewModel : ObservableObject
     private readonly AppSettings _settings;
     private readonly DispatcherTimer _timer;
 
-    private IReadOnlyList<PlayerRowViewModel> _players = [];
+    /// <summary>The row of each player in the fight, by actor id.</summary>
+    private readonly Dictionary<uint, PlayerRowViewModel> _rows = [];
+
     private string _bossName = "";
     private string _clock = "00:00";
     private bool _hasBoss;
@@ -24,13 +28,14 @@ public sealed class OverlayViewModel : ObservableObject
     private string _status = "";
     private string _totalDps = "", _totalHeal = "", _totalTaken = "";
     private SortOption _sort;
+    private Brush _panelBackground = Brushes.Black;
 
     public OverlayViewModel(MeterService meter, AppSettings settings)
     {
         _meter = meter;
         _settings = settings;
         _sort = SortOptions.FirstOrDefault(o => o.Key == settings.SortKey) ?? SortOptions[0];
-        PanelBackground = PanelBrush(settings.Opacity);
+        SetOpacity(settings.Opacity);
         _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
         _timer.Tick += (_, _) => Refresh();
         _timer.Start();
@@ -54,9 +59,21 @@ public sealed class OverlayViewModel : ObservableObject
         }
     }
 
-    public Brush PanelBackground { get; }
+    public bool PartyOnly
+    {
+        get => _settings.PartyOnly;
+        set
+        {
+            if (_settings.PartyOnly == value) return;
+            _settings.PartyOnly = value;
+            Refresh();
+        }
+    }
 
-    public IReadOnlyList<PlayerRowViewModel> Players { get => _players; private set => Set(ref _players, value); }
+    /// <summary>Rows in display order.</summary>
+    public ObservableCollection<PlayerRowViewModel> Players { get; } = [];
+
+    public Brush PanelBackground { get => _panelBackground; private set => Set(ref _panelBackground, value); }
     public string BossName { get => _bossName; private set => Set(ref _bossName, value); }
     public string Clock { get => _clock; private set => Set(ref _clock, value); }
     public bool HasBoss { get => _hasBoss; private set => Set(ref _hasBoss, value); }
@@ -69,6 +86,15 @@ public sealed class OverlayViewModel : ObservableObject
     public string TotalHeal { get => _totalHeal; private set => Set(ref _totalHeal, value); }
     public string TotalTaken { get => _totalTaken; private set => Set(ref _totalTaken, value); }
 
+    /// <summary>Background opacity of the panel, 0.4–1 (also called by the settings window).</summary>
+    public void SetOpacity(double opacity)
+    {
+        _settings.Opacity = Math.Clamp(opacity, 0.4, 1);
+        var brush = new SolidColorBrush(Color.FromArgb((byte)Math.Round(_settings.Opacity * 255), 0x0C, 0x0E, 0x14));
+        brush.Freeze();
+        PanelBackground = brush;
+    }
+
     public void Reset()
     {
         _meter.Reset();
@@ -78,18 +104,12 @@ public sealed class OverlayViewModel : ObservableObject
     private void Refresh()
     {
         _meter.Tick();
-        var snap = _meter.Snapshot();
-        if (snap is null || snap.Combatants.Count == 0)
+        var snap = _meter.BossFight();
+        if (snap is null)
         {
             ShowEmpty();
             return;
         }
-
-        var combatants = SortBy(snap.Combatants, _sort.Key);
-        var maxDps = combatants.Max(c => c.Dps);
-        var maxHeal = combatants.Max(c => c.Healing);
-        var maxTaken = combatants.Max(c => c.DamageTaken);
-        Players = combatants.Select((c, i) => PlayerRowViewModel.From(i + 1, c, maxDps, maxHeal, maxTaken)).ToList();
 
         Status = "";
         Clock = Format.Clock(snap.CombatMs);
@@ -97,18 +117,62 @@ public sealed class OverlayViewModel : ObservableObject
         BossName = snap.Boss?.Name ?? snap.Title;
         BossHp = snap.Boss?.HpFraction ?? 0;
         BossHpText = HasBoss ? "HP " + Format.Percent(BossHp) : "";
-        TotalDps = PlayerRowViewModel.Kilo(snap.PartyDps);
+
+        var shown = PartyOnly ? snap.Combatants.Where(_meter.IsPartyMember) : snap.Combatants;
+        var combatants = SortBy(shown, _sort.Key);
+        UpdateRows(combatants);
+        TotalDps = PlayerRowViewModel.Kilo(combatants.Sum(c => c.Dps)) + "/" + PlayerRowViewModel.WholeKilo(combatants.Sum(c => c.Damage));
         TotalHeal = PlayerRowViewModel.Kilo(combatants.Sum(c => c.Healing));
         TotalTaken = PlayerRowViewModel.Kilo(combatants.Sum(c => c.DamageTaken));
     }
 
+    /// <summary>Updates each player's row in place and puts the rows in the given order.</summary>
+    private void UpdateRows(List<CombatantSnapshot> combatants)
+    {
+        var max = new PartyMax(
+            combatants.Select(c => c.Dps).DefaultIfEmpty().Max(),
+            combatants.Select(c => c.Healing).DefaultIfEmpty().Max(),
+            combatants.Select(c => c.DamageTaken).DefaultIfEmpty().Max());
+
+        var order = new List<PlayerRowViewModel>(combatants.Count);
+        foreach (var c in combatants)
+        {
+            if (!_rows.TryGetValue(c.ActorId, out var row)) _rows[c.ActorId] = row = new PlayerRowViewModel();
+            row.Update(order.Count + 1, c, max);
+            order.Add(row);
+        }
+
+        // Players who left the fight (a new fight started, or the meter was reset).
+        var present = combatants.Select(c => c.ActorId).ToHashSet();
+        foreach (var id in _rows.Keys.Where(id => !present.Contains(id)).ToList()) _rows.Remove(id);
+
+        ShowInOrder(order);
+    }
+
+    /// <summary>Moves, adds and removes rows so <see cref="Players"/> matches <paramref name="order"/>.</summary>
+    private void ShowInOrder(List<PlayerRowViewModel> order)
+    {
+        for (var i = 0; i < order.Count; i++)
+        {
+            var at = Players.IndexOf(order[i]);
+            if (at == i) continue;
+            if (at < 0) Players.Insert(i, order[i]);
+            else Players.Move(at, i);
+        }
+        while (Players.Count > order.Count) Players.RemoveAt(Players.Count - 1);
+    }
+
     private void ShowEmpty()
     {
-        Players = [];
-        Status = _meter.CaptureStatus.Message;
+        _rows.Clear();
+        Players.Clear();
+        var capture = _meter.CaptureStatus;
+        Status = capture.State == CaptureState.Capturing ? "ボス戦の開始を待っています" : capture.Message;
         Clock = "00:00";
         HasBoss = false;
         BossName = "";
+        BossHp = 0;
+        BossHpText = "";
         TotalDps = TotalHeal = TotalTaken = "";
     }
 
@@ -122,13 +186,5 @@ public sealed class OverlayViewModel : ObservableObject
             _ => c => c.Dps,
         };
         return combatants.OrderBy(c => c.IsUnknownSummons).ThenByDescending(metric).ToList();
-    }
-
-    private static Brush PanelBrush(double opacity)
-    {
-        var alpha = (byte)Math.Round(Math.Clamp(opacity, 0.4, 1) * 255);
-        var brush = new SolidColorBrush(Color.FromArgb(alpha, 0x0C, 0x0E, 0x14));
-        brush.Freeze();
-        return brush;
     }
 }
