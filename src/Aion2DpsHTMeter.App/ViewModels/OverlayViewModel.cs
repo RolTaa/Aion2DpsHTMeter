@@ -8,7 +8,11 @@ using AionMeter.Core.Combat;
 
 namespace Aion2DpsHTMeter.App.ViewModels;
 
-public sealed record SortOption(SortKey Key, string Label);
+/// <summary>An entry of the sort drop-down; ToString is what the closed drop-down shows.</summary>
+public sealed record SortOption(SortKey Key, string Label)
+{
+    public override string ToString() => Label;
+}
 
 /// <summary>Reads the live snapshot five times a second and turns it into what the overlay shows.</summary>
 public sealed class OverlayViewModel : ObservableObject
@@ -46,9 +50,10 @@ public sealed class OverlayViewModel : ObservableObject
 
     public IReadOnlyList<SortOption> SortOptions { get; } =
     [
-        new(SortKey.Dps, "DPS順"),
-        new(SortKey.Healing, "回復量順"),
-        new(SortKey.DamageTaken, "被ダメージ順"),
+        new(SortKey.Dps, "DPS"),
+        new(SortKey.Damage, "総ダメージ"),
+        new(SortKey.Healing, "総回復"),
+        new(SortKey.DamageTaken, "総被ダメージ"),
     ];
 
     public SortOption Sort
@@ -62,10 +67,10 @@ public sealed class OverlayViewModel : ObservableObject
         }
     }
 
-    /// <summary>Whose rows are shown; the header button steps through all → force → party.</summary>
+    /// <summary>Whose rows are shown; the header button switches between 周囲 (everyone) and 個人 (self).</summary>
     public MemberScope Scope
     {
-        get => _settings.MemberScope;
+        get => _settings.MemberScope == MemberScope.Self ? MemberScope.Self : MemberScope.Everyone;
         private set
         {
             _settings.MemberScope = value;
@@ -75,19 +80,9 @@ public sealed class OverlayViewModel : ObservableObject
         }
     }
 
-    public string ScopeLabel => Scope switch
-    {
-        MemberScope.Force => "フォース",
-        MemberScope.Party => "パーティー",
-        _ => "全体",
-    };
+    public string ScopeLabel => Scope == MemberScope.Self ? "個人" : "周囲";
 
-    public void NextScope() => Scope = Scope switch
-    {
-        MemberScope.All => MemberScope.Force,
-        MemberScope.Force => MemberScope.Party,
-        _ => MemberScope.All,
-    };
+    public void NextScope() => Scope = Scope == MemberScope.Self ? MemberScope.Everyone : MemberScope.Self;
 
     // Measurement targets, for the settings window.
     public bool TargetArtifact { get => HasTarget(TargetKinds.AbyssArtifact); set => SetTarget(TargetKinds.AbyssArtifact, value); }
@@ -155,9 +150,7 @@ public sealed class OverlayViewModel : ObservableObject
             return;
         }
 
-        Status = Scope != MemberScope.All && !_meter.DemoRunning && !_meter.Party.Known
-            ? "パーティ情報をまだ受信していないため、自分だけを表示しています"
-            : "";
+        Status = "";
         (ClockLabel, Clock) = ClockOf(snap);
         HasBoss = snap.Boss is not null;
         BossName = snap.Boss?.Name ?? snap.Title;
@@ -171,8 +164,8 @@ public sealed class OverlayViewModel : ObservableObject
         TotalTaken = PlayerRowViewModel.Kilo(combatants.Sum(c => c.DamageTaken));
     }
 
-    /// <summary>Everyone, or the local player and the force / party members on the roster.</summary>
-    private bool IsShown(CombatantSnapshot c) => _meter.DemoRunning || _meter.Party.Includes(c, Scope);
+    /// <summary>Everyone around, or only the local player.</summary>
+    private bool IsShown(CombatantSnapshot c) => Scope == MemberScope.Everyone || c.IsSelf;
 
     private (string Label, string Value) ClockOf(EncounterSnapshot fight)
     {
@@ -239,6 +232,7 @@ public sealed class OverlayViewModel : ObservableObject
     {
         Func<CombatantSnapshot, double> metric = key switch
         {
+            SortKey.Damage => c => c.Damage,
             SortKey.Healing => c => c.Healing,
             SortKey.DamageTaken => c => c.DamageTaken,
             _ => c => c.Dps,

@@ -152,9 +152,9 @@
                     <UniformGrid Columns="2" Margin="0,4,0,0">
                         <Button Style="{StaticResource PillButton}" Content="{Binding ScopeLabel}" Click="OnNextScope"
                                 Height="22" Padding="8,0" FontSize="10" Margin="0,0,2,0" HorizontalContentAlignment="Left"
-                                ToolTip="表示する人: 全体 → フォース → パーティー" AutomationProperties.Name="表示する人の切り替え" />
+                                ToolTip="表示する人: 周囲(全員)/ 個人(自分のみ)" AutomationProperties.Name="表示する人の切り替え" />
                         <ComboBox Style="{StaticResource DarkComboBox}" ItemsSource="{Binding SortOptions}"
-                                  SelectedItem="{Binding Sort}" DisplayMemberPath="Label" Height="22" FontSize="10" Margin="2,0,0,0"
+                                  SelectedItem="{Binding Sort}" Height="22" FontSize="10" Margin="2,0,0,0"
                                   AutomationProperties.Name="並び順" ToolTip="並び順" />
                     </UniformGrid>
                 </StackPanel>

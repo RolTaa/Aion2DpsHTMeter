@@ -23,16 +23,12 @@ public sealed class MeterService : IDisposable
         Data = GameData.Load(DataDirectory);
         Tracker = new CombatTracker(Data, new MeterOptions());
         _fights = new FightFilter(LoadArtifactNpcs(Path.Combine(DataDirectory, "abyss_artifact_npcs.json")));
-        Tracker.RosterReceived += roster => Party.Update(roster, Tracker.SelfName);
     }
 
     public static string DataDirectory { get; } = Path.Combine(AppContext.BaseDirectory, "data");
 
     public GameData Data { get; }
     public CombatTracker Tracker { get; }
-    public PartyRoster Party { get; } = new();
-
-    /// <summary>The demo fight sends no roster: everyone in it counts as party.</summary>
     public bool DemoRunning => _demo?.IsRunning == true;
 
     public CaptureStatus CaptureStatus =>

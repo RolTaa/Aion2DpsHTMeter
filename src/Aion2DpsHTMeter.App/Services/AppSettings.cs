@@ -1,13 +1,24 @@
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Aion2DpsHTMeter.App.Services;
 
 public enum SortKey
 {
     Dps,
+    Damage,
     Healing,
     DamageTaken,
+}
+
+/// <summary>Whose rows the overlay shows.</summary>
+public enum MemberScope
+{
+    /// <summary>周囲: everyone fighting the target.</summary>
+    Everyone,
+    /// <summary>個人: the local player only.</summary>
+    Self,
 }
 
 /// <summary>
@@ -21,15 +32,16 @@ public sealed class AppSettings
 
     private static string FilePath => Path.Combine(AppDataDir, "settings.json");
 
-    private static readonly JsonSerializerOptions Json = new() { WriteIndented = true };
+    /// <summary>Choices are saved by name, so adding a choice later does not change what an old file means.</summary>
+    private static readonly JsonSerializerOptions Json = new() { WriteIndented = true, Converters = { new JsonStringEnumConverter() } };
 
     /// <summary>Background opacity of the overlay panel, 0.4–1.</summary>
     public double Opacity { get; set; } = 0.85;
 
     public SortKey SortKey { get; set; } = SortKey.Dps;
 
-    /// <summary>Whose rows are shown: everyone, the force, or the own party.</summary>
-    public MemberScope MemberScope { get; set; } = MemberScope.Party;
+    /// <summary>Whose rows are shown: everyone around, or the local player only.</summary>
+    public MemberScope MemberScope { get; set; } = MemberScope.Everyone;
 
     /// <summary>Which fights are measured and shown.</summary>
     public TargetKinds Targets { get; set; } = TargetKinds.AbyssArtifact | TargetKinds.Boss;
@@ -45,7 +57,7 @@ public sealed class AppSettings
         try
         {
             if (File.Exists(FilePath))
-                return JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(FilePath)) ?? new AppSettings();
+                return JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(FilePath), Json) ?? new AppSettings();
         }
         catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
         {
