@@ -1,4 +1,4 @@
-using AionMeter.Core.Events;
+﻿using AionMeter.Core.Events;
 
 namespace AionMeter.Core.Combat;
 
@@ -55,6 +55,20 @@ public sealed class SkillStats
     public HitStats Stats { get; } = new();
 }
 
+/// <summary>A combatant's damage on one target NPC: the total, and per whole second since encounter start.</summary>
+public sealed class TargetDamage
+{
+    public long Damage { get; set; }
+    public List<long> PerSecond { get; } = new();
+
+    public void Add(int second, long damage)
+    {
+        Damage += damage;
+        while (PerSecond.Count <= second) PerSecond.Add(0);
+        PerSecond[second] += damage;
+    }
+}
+
 /// <summary>One cast / hit in order, for the rotation view.</summary>
 public readonly record struct CastRecord(int OffsetMs, int SkillCode, long Damage, HitFlags Flags);
 
@@ -81,6 +95,8 @@ public sealed class Combatant
     public Dictionary<int, SkillStats> Skills { get; } = new();
     /// <summary>Damage per whole second since encounter start.</summary>
     public List<long> PerSecond { get; } = new();
+    /// <summary>Damage on each target NPC, by actor id.</summary>
+    public Dictionary<uint, TargetDamage> ByTarget { get; } = new();
     public List<CastRecord> Casts { get; } = new();
     public int MaxHitSkill { get; set; }
 
@@ -114,6 +130,9 @@ public sealed class Combatant
             while (PerSecond.Count <= i) PerSecond.Add(0);
             PerSecond[i] += other.PerSecond[i];
         }
+        foreach (var (target, damage) in other.ByTarget)
+            for (var i = 0; i < damage.PerSecond.Count; i++)
+                if (damage.PerSecond[i] != 0) Target(target).Add(i, damage.PerSecond[i]);
         if (other.Total.Max > Total.Max) MaxHitSkill = other.MaxHitSkill;
         DamageTaken += other.DamageTaken;
         HitsTaken += other.HitsTaken;
@@ -122,7 +141,8 @@ public sealed class Combatant
         LastHitMs = Math.Max(LastHitMs, other.LastHitMs);
     }
 
-    public void AddDamage(int offsetMs, int skillCode, long damage, HitFlags flags)
+    /// <param name="target">The NPC hit; 0 when not known (the damage then counts in the totals only).</param>
+    public void AddDamage(int offsetMs, int skillCode, long damage, HitFlags flags, uint target = 0)
     {
         var prevMax = Total.Max;
         Total.Add(damage, flags);
@@ -138,8 +158,15 @@ public sealed class Combatant
         var sec = Math.Max(0, offsetMs / 1000);
         while (PerSecond.Count <= sec) PerSecond.Add(0);
         PerSecond[sec] += damage;
+        if (target != 0) Target(target).Add(sec, damage);
 
         if (Casts.Count < MaxCasts) Casts.Add(new CastRecord(offsetMs, skillCode, damage, flags));
+    }
+
+    private TargetDamage Target(uint target)
+    {
+        if (!ByTarget.TryGetValue(target, out var t)) ByTarget[target] = t = new TargetDamage();
+        return t;
     }
 }
 

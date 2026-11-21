@@ -42,7 +42,7 @@ public class OverlayLogicTests
     public void Kill_time_follows_the_recent_hp_loss()
     {
         var est = new KillTimeEstimator();
-        var fight = Guid.NewGuid();
+        const uint fight = 500;
         Assert.Null(est.Update(fight, 0, 1_000_000));          // one sample says nothing
         Assert.Null(est.Update(fight, 2_000, 980_000));        // too short to trust
         var left = est.Update(fight, 10_000, 900_000);         // 100k lost in 10 s → 90 s left
@@ -50,21 +50,21 @@ public class OverlayLogicTests
     }
 
     [Fact]
-    public void Kill_time_starts_over_on_a_new_fight_or_a_heal()
+    public void Kill_time_starts_over_on_a_new_target_or_a_heal()
     {
         var est = new KillTimeEstimator();
-        var fight = Guid.NewGuid();
+        const uint fight = 500;
         est.Update(fight, 0, 1_000_000);
         est.Update(fight, 10_000, 900_000);
         Assert.Null(est.Update(fight, 11_000, 950_000));       // the boss healed: no estimate yet
-        Assert.Null(est.Update(Guid.NewGuid(), 12_000, 500_000));
+        Assert.Null(est.Update(501, 12_000, 500_000));
     }
 
     [Fact]
     public void Kill_time_only_uses_the_last_twenty_seconds()
     {
         var est = new KillTimeEstimator();
-        var fight = Guid.NewGuid();
+        const uint fight = 500;
         est.Update(fight, 0, 1_000_000);
         est.Update(fight, 10_000, 500_000);                    // fast phase: 50k/s
         est.Update(fight, 30_000, 400_000);                    // slow: 5k/s

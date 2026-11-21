@@ -31,7 +31,9 @@ public sealed record CombatantSnapshot(
     int ServerId = 0,
     int GearScore = 0,
     long CombatPower = 0,
-    long Healing = 0)
+    long Healing = 0,
+    long FocusDamage = 0,
+    double RecentDps = 0)
 {
     /// <summary>The "summons, owner unknown" pseudo-row (see <see cref="Combatant.UnknownSummonsId"/>).</summary>
     [System.Text.Json.Serialization.JsonIgnore]
@@ -52,7 +54,8 @@ public sealed record EncounterSnapshot(
     BossSnapshot? Boss,
     IReadOnlyList<CombatantSnapshot> Combatants,
     int TargetCode = 0,
-    int Attackers = 0)
+    int Attackers = 0,
+    BossSnapshot? Focus = null)
 {
     /// <summary>Players who took part (the unknown-summons row is not one).</summary>
     [System.Text.Json.Serialization.JsonIgnore]

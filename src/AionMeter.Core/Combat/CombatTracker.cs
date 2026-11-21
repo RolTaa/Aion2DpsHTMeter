@@ -266,7 +266,7 @@ public sealed class CombatTracker
 
         var offset = (int)Math.Max(0, d.TimeMs - enc.StartMs);
         var flags = d.HitCount > 1 ? d.Flags | HitFlags.Multi : d.Flags;
-        c.AddDamage(offset, d.SkillCode, d.Damage, flags);
+        c.AddDamage(offset, d.SkillCode, d.Damage, flags, target);
         if (d.PowerScalar is >= 1_000 and <= 200_000 && d.SourceId == source) c.Scalars.Add(d.PowerScalar);
         if (c.FirstHitMs == 0) c.FirstHitMs = d.TimeMs;
         c.LastHitMs = d.TimeMs;
@@ -779,16 +779,22 @@ public sealed class CombatTracker
         var combatMs = enc.CombatMs;
         var seconds = combatMs / 1000.0;
         var total = Math.Max(1, enc.TotalDamage);
+        var focus = FocusTarget(enc);
+        // The recent-DPS window ends now in a running fight, at the last hit in a finished one.
+        var lastSecond = (int)(Math.Max(0, (enc.IsActive ? nowMs : enc.LastDamageMs) - enc.StartMs) / 1000);
         var rows = new List<CombatantSnapshot>(enc.Combatants.Count);
         foreach (var c in enc.Combatants.Values)
         {
             RefreshIdentity(c);
             var t = c.Total;
+            var onFocus = focus is { } id ? c.ByTarget.GetValueOrDefault(id) : null;
             rows.Add(new CombatantSnapshot(
                 c.ActorId, c.Name, c.Class, c.IsSelf,
                 t.Damage, t.Damage / seconds, (double)t.Damage / total,
                 t.Hits, t.Hits > 0 ? (double)t.Crits / t.Hits : 0,
-                t.Max, c.DamageTaken, c.ServerId, c.GearScore, c.CombatPower, c.Healing));
+                t.Max, c.DamageTaken, c.ServerId, c.GearScore, c.CombatPower, c.Healing,
+                FocusDamage: onFocus?.Damage ?? 0,
+                RecentDps: onFocus is null ? 0 : RecentDps(onFocus.PerSecond, lastSecond)));
         }
         rows.Sort((a, b) => b.Damage.CompareTo(a.Damage));
         // Pets without a known owner are not a player: list them last so they never take a place in the ranking.
@@ -814,7 +820,40 @@ public sealed class CombatTracker
         return new EncounterSnapshot(
             enc.Id, Title(enc), enc.Zone, ToTime(enc.StartMs), enc.ClockMs(nowMs), combatMs, enc.IsActive, enc.Reason,
             enc.TotalDamage, enc.TotalDamage / seconds, boss, rows, MainTargetCode(enc),
-            enc.Attackers.Count + rows.Count(r => !r.IsUnknownSummons && !enc.Attackers.Contains(r.ActorId)));
+            enc.Attackers.Count + rows.Count(r => !r.IsUnknownSummons && !enc.Attackers.Contains(r.ActorId)),
+            Focus: focus == enc.BossId ? boss : FocusSnapshot(focus));
+    }
+
+    /// <summary>Seconds the recent DPS is averaged over.</summary>
+    public const int RecentDpsSeconds = 60;
+
+    /// <summary>
+    /// Aion2DpsHTMeter: the NPC with the most HP among those the fight hit (the boss when there is one), so the overlay
+    /// shows the damage on the main target rather than on everything around it. Ties go to the most damaged.
+    /// </summary>
+    private uint? FocusTarget(Encounter enc)
+    {
+        if (enc.DamageByTarget.Count == 0) return enc.BossId;
+        return enc.DamageByTarget
+            .OrderByDescending(kv => _entities.TryGetNpc(kv.Key, out var npc) ? npc.MaxHp : 0)
+            .ThenByDescending(kv => kv.Value)
+            .First().Key;
+    }
+
+    private BossSnapshot? FocusSnapshot(uint? focus)
+    {
+        if (focus is not { } id || !_entities.TryGetNpc(id, out var npc)) return null;
+        return new BossSnapshot(id, npc.NpcCode, _entities.NpcName(id), npc.Hp, npc.MaxHp, npc.MaxHpKnown);
+    }
+
+    /// <summary>Damage per second over the last <see cref="RecentDpsSeconds"/> seconds up to <paramref name="lastSecond"/>
+    /// (fewer early in the fight).</summary>
+    private static double RecentDps(List<long> perSecond, int lastSecond)
+    {
+        var first = Math.Max(0, lastSecond - RecentDpsSeconds + 1);
+        long sum = 0;
+        for (var i = first; i <= lastSecond && i < perSecond.Count; i++) sum += perSecond[i];
+        return sum / (double)(lastSecond - first + 1);
     }
 
     private CombatantDetail BuildDetail(Encounter enc, Combatant c, int maxCasts)

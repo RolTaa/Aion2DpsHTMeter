@@ -152,14 +152,16 @@ public sealed class OverlayViewModel : ObservableObject
 
         Status = "";
         (ClockLabel, Clock) = ClockOf(snap);
-        HasBoss = snap.Boss is not null;
-        BossName = snap.Boss?.Name ?? snap.Title;
-        BossHp = snap.Boss?.HpFraction ?? 0;
-        BossHpText = HasBoss ? "HP " + Format.Percent(BossHp) : "";
+        // The header follows the main target: the NPC with the most HP (the boss when there is one).
+        var target = snap.Focus ?? snap.Boss;
+        HasBoss = target is { Hp: >= 0 };
+        BossName = target?.Name ?? snap.Title;
+        BossHp = target?.HpFraction ?? 0;
+        BossHpText = HasBoss ? Format.Percent(BossHp) : "";
 
         var combatants = SortBy(snap.Combatants.Where(IsShown), _sort.Key);
         UpdateRows(combatants);
-        TotalDps = PlayerRowViewModel.Kilo(combatants.Sum(c => c.Dps)) + "/" + PlayerRowViewModel.WholeKilo(combatants.Sum(c => c.Damage));
+        TotalDps = PlayerRowViewModel.Kilo(combatants.Sum(c => c.RecentDps)) + "/" + PlayerRowViewModel.WholeKilo(combatants.Sum(c => c.FocusDamage));
         TotalHeal = PlayerRowViewModel.Kilo(combatants.Sum(c => c.Healing));
         TotalTaken = PlayerRowViewModel.Kilo(combatants.Sum(c => c.DamageTaken));
     }
@@ -169,10 +171,10 @@ public sealed class OverlayViewModel : ObservableObject
 
     private (string Label, string Value) ClockOf(EncounterSnapshot fight)
     {
-        if (fight.Boss is not { } boss) return ("経過", Format.Clock(fight.CombatMs));
-        if (boss.Hp <= 0) return ("撃破", Format.Clock(fight.CombatMs));
+        if ((fight.Focus ?? fight.Boss) is not { Hp: >= 0 } target) return ("経過", Format.Clock(fight.CombatMs));
+        if (target.Hp == 0) return ("撃破", Format.Clock(fight.CombatMs));
         if (!fight.IsActive) return ("終了", Format.Clock(fight.CombatMs));
-        var left = _killTime.Update(fight.Id, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), boss.Hp);
+        var left = _killTime.Update(target.ActorId, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), target.Hp);
         return ("撃破予測", left is { } t ? Format.Clock((long)t.TotalMilliseconds) : "--:--");
     }
 
@@ -180,7 +182,7 @@ public sealed class OverlayViewModel : ObservableObject
     private void UpdateRows(List<CombatantSnapshot> combatants)
     {
         var max = new PartyMax(
-            combatants.Select(c => c.Damage).DefaultIfEmpty().Max(),
+            combatants.Select(c => c.FocusDamage).DefaultIfEmpty().Max(),
             combatants.Select(c => c.Healing).DefaultIfEmpty().Max(),
             combatants.Select(c => c.DamageTaken).DefaultIfEmpty().Max());
 
@@ -232,10 +234,10 @@ public sealed class OverlayViewModel : ObservableObject
     {
         Func<CombatantSnapshot, double> metric = key switch
         {
-            SortKey.Damage => c => c.Damage,
+            SortKey.Damage => c => c.FocusDamage,
             SortKey.Healing => c => c.Healing,
             SortKey.DamageTaken => c => c.DamageTaken,
-            _ => c => c.Dps,
+            _ => c => c.RecentDps,
         };
         return combatants.OrderBy(c => c.IsUnknownSummons).ThenByDescending(metric).ToList();
     }

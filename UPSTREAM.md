@@ -29,6 +29,9 @@
 | `src/AionMeter.Core/Protocol/PacketParser.cs` | 同上 |
 | `src/AionMeter.Core/Combat/CombatTracker.cs` | 回復の集計を修正: 味方への回復(プレイヤー→プレイヤーのダメージ記録)を回復として数える、回復だけのプレイヤーにも行を作る、MP回復と敵の自己回復は除外(A2Tools-DPS-Meter の読み方に合わせた) |
 | `src/AionMeter.Core/Game/GameData.cs` | `resource_restore_skills.json`(MP等だけを回復するスキル)を読み込む |
+| `src/AionMeter.Core/Combat/Encounter.cs` | 対象 NPC ごとのダメージと秒ごとの内訳(`TargetDamage`, `Combatant.ByTarget`)を追加 |
+| `src/AionMeter.Core/Combat/CombatTracker.cs` | ダメージを対象ごとにも記録。スナップショットに主対象(最大HPのNPC)と、主対象へのダメージ・直近60秒のDPSを追加 |
+| `src/AionMeter.Core/Combat/Snapshots.cs` | `CombatantSnapshot` に `FocusDamage` / `RecentDps`、`EncounterSnapshot` に `Focus` を追加(いずれも末尾・既定値あり) |
 | `data/resource_restore_skills.json` | 追加。A2Tools-DPS-Meter `src/data/resource_restore_skills.json`(commit `705287b`)を配列形式に変換 |
 
 ## 上流の更新を取り込む手順

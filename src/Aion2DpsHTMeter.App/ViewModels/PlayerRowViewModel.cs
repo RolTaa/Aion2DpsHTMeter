@@ -43,11 +43,12 @@ public sealed class PlayerRowViewModel : ObservableObject
         ClassBrush = ClassPalette.Of(c.Class);
         IsSelf = c.IsSelf;
 
-        DpsText = Kilo(c.Dps) + "/" + WholeKilo(c.Damage);
+        // DPS over the last minute / total damage, both on the fight's main target (the NPC with the most HP).
+        DpsText = Kilo(c.RecentDps) + "/" + WholeKilo(c.FocusDamage);
         HealText = Kilo(c.Healing);
         TakenText = Kilo(c.DamageTaken);
 
-        DamageBar = Ratio(c.Damage, max.Damage);
+        DamageBar = Ratio(c.FocusDamage, max.Damage);
         HealBar = Ratio(c.Healing, max.Healing);
         TakenBar = Ratio(c.DamageTaken, max.DamageTaken);
     }

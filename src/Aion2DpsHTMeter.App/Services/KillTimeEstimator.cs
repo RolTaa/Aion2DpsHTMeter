@@ -1,7 +1,7 @@
 namespace Aion2DpsHTMeter.App.Services;
 
 /// <summary>
-/// Estimates when the boss dies from how fast its HP fell over the last <see cref="Window"/>, so a phase change or
+/// Estimates when the target dies from how fast its HP fell over the last <see cref="Window"/>, so a phase change or
 /// a member dying shows in the estimate within seconds. Kept free of WPF so the tests can use it.
 /// </summary>
 public sealed class KillTimeEstimator
@@ -12,14 +12,14 @@ public sealed class KillTimeEstimator
     private static readonly TimeSpan MinSpan = TimeSpan.FromSeconds(3);
 
     private readonly Queue<(long Ms, long Hp)> _samples = new();
-    private Guid _fight;
+    private uint _target;
 
-    /// <summary>Adds the boss HP seen at <paramref name="nowMs"/> and returns the time left, or null when unknown.</summary>
-    public TimeSpan? Update(Guid fight, long nowMs, long hp)
+    /// <summary>Adds the target's HP seen at <paramref name="nowMs"/> and returns the time left, or null when unknown.</summary>
+    public TimeSpan? Update(uint target, long nowMs, long hp)
     {
-        if (fight != _fight)
+        if (target != _target)
         {
-            _fight = fight;
+            _target = target;
             _samples.Clear();
         }
         if (_samples.Count > 0 && hp > _samples.Last().Hp) _samples.Clear(); // healed or reset: start over
