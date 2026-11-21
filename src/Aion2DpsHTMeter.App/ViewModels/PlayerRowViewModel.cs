@@ -5,10 +5,11 @@ using AionMeter.Core.Combat;
 namespace Aion2DpsHTMeter.App.ViewModels;
 
 /// <summary>Party maximum of each metric: the longest bar of each kind is full width.</summary>
-public readonly record struct PartyMax(double Dps, long Healing, long DamageTaken);
+public readonly record struct PartyMax(long Damage, long Healing, long DamageTaken);
 
 /// <summary>
-/// One player row: class bar with the rank on it, then the DPS (name on top), healing and damage-taken bars.
+/// One player row: class bar with the rank on it, then the damage, healing and damage-taken bars with the name and
+/// values laid over them.
 /// A row lives as long as its player is in the fight and is updated in place on every refresh, so WPF keeps
 /// the row's visuals instead of rebuilding them five times a second.
 /// </summary>
@@ -19,7 +20,7 @@ public sealed class PlayerRowViewModel : ObservableObject
     private Brush _classBrush = ClassPalette.Of(default);
     private bool _isSelf;
     private string _dpsText = "", _healText = "", _takenText = "";
-    private double _dpsBar, _healBar, _takenBar;
+    private double _damageBar, _healBar, _takenBar;
 
     public int Rank { get => _rank; private set => Set(ref _rank, value); }
     public string Name { get => _name; private set => Set(ref _name, value); }
@@ -30,8 +31,8 @@ public sealed class PlayerRowViewModel : ObservableObject
     public string HealText { get => _healText; private set => Set(ref _healText, value); }
     public string TakenText { get => _takenText; private set => Set(ref _takenText, value); }
 
-    /// <summary>Bar lengths, 0–1.</summary>
-    public double DpsBar { get => _dpsBar; private set => Set(ref _dpsBar, value); }
+    /// <summary>Bar lengths, 0–1: total damage, healing and damage taken so far.</summary>
+    public double DamageBar { get => _damageBar; private set => Set(ref _damageBar, value); }
     public double HealBar { get => _healBar; private set => Set(ref _healBar, value); }
     public double TakenBar { get => _takenBar; private set => Set(ref _takenBar, value); }
 
@@ -46,7 +47,7 @@ public sealed class PlayerRowViewModel : ObservableObject
         HealText = Kilo(c.Healing);
         TakenText = Kilo(c.DamageTaken);
 
-        DpsBar = Ratio(c.Dps, max.Dps);
+        DamageBar = Ratio(c.Damage, max.Damage);
         HealBar = Ratio(c.Healing, max.Healing);
         TakenBar = Ratio(c.DamageTaken, max.DamageTaken);
     }

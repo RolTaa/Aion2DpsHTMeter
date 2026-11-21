@@ -1,4 +1,4 @@
-namespace AionMeter.Core.Events;
+﻿namespace AionMeter.Core.Events;
 
 /// <summary>Quality flags of a single hit, normalised from whatever the wire format uses.</summary>
 [Flags]
@@ -61,7 +61,8 @@ public sealed record SelfIdentifiedEvent(long TimeMs, uint ActorId, string Name,
 /// <summary>One member of the party roster: the only place the server gives other players' gear score and combat power.</summary>
 /// <param name="GearScore">Equipment item level ("GS"); 0 when it did not read.</param>
 /// <param name="CombatPower">Combat power ("CP"), as on the character sheet.</param>
-public sealed record PartyMemberInfo(string Name, int ServerId, int Level, int GearScore, long CombatPower, GameClass Class);
+/// <param name="Slot">The member's slot on the roster (1-based; 0 when not known).</param>
+public sealed record PartyMemberInfo(string Name, int ServerId, int Level, int GearScore, long CombatPower, GameClass Class, int Slot = 0);
 
 /// <summary>
 /// The party roster (<c>02 97</c>), sent whenever the party changes. Members are named, not identified by entity id:

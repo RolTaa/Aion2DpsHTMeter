@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using AionMeter.Core;
 using AionMeter.Core.Combat;
 using AionMeter.Core.Events;
@@ -67,9 +67,9 @@ public class GearTests
         var roster = Assert.IsType<PartyRosterEvent>(Assert.Single(Parse(Opcodes.PartyRoster, body)));
         Assert.Equal(
         [
-            new PartyMemberInfo("Sylvaen", 2305, 45, 2859, 59_072, GameClass.Elementalist),
-            new PartyMemberInfo("Borgrim", 2305, 45, 3012, 61_234, GameClass.Gladiator),
-            new PartyMemberInfo("Квилл", 1102, 44, 2650, 38_900, GameClass.Chanter),
+            new PartyMemberInfo("Sylvaen", 2305, 45, 2859, 59_072, GameClass.Elementalist, 1),
+            new PartyMemberInfo("Borgrim", 2305, 45, 3012, 61_234, GameClass.Gladiator, 2),
+            new PartyMemberInfo("Квилл", 1102, 44, 2650, 38_900, GameClass.Chanter, 3),
         ], roster.Members);
     }
 

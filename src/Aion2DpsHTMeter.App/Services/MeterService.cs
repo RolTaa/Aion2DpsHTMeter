@@ -1,4 +1,5 @@
 using System.IO;
+using System.Text.Json;
 using AionMeter.Core.Capture;
 using AionMeter.Core.Combat;
 using AionMeter.Core.Demo;
@@ -14,14 +15,14 @@ public sealed class MeterService : IDisposable
     private IEventSource? _capture;
     private DemoFightSource? _demo;
 
-    /// <summary>The last fight that had a boss: shown until the next boss fight starts.</summary>
-    private Guid? _lastBossFight;
+    private readonly FightFilter _fights;
 
     public MeterService(AppSettings settings)
     {
         _settings = settings;
         Data = GameData.Load(DataDirectory);
         Tracker = new CombatTracker(Data, new MeterOptions());
+        _fights = new FightFilter(LoadArtifactNpcs(Path.Combine(DataDirectory, "abyss_artifact_npcs.json")));
         Tracker.RosterReceived += roster => Party.Update(roster, Tracker.SelfName);
     }
 
@@ -66,30 +67,41 @@ public sealed class MeterService : IDisposable
         _demo.Start(TimeSpan.FromSeconds(seconds));
     }
 
-    /// <summary>Closes the running fight; the view stays empty until the next boss fight.</summary>
+    /// <summary>Closes the running fight; the view stays empty until the next fight of a chosen kind.</summary>
     public void Reset()
     {
         Tracker.Reset();
-        _lastBossFight = null;
+        _fights.Forget();
     }
 
     /// <summary>Idle checks (fight end by timeout) run on the wall clock; call this from the UI timer.</summary>
     public void Tick() => Tracker.Tick(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
 
     /// <summary>
-    /// The running boss fight, or the last one until the next boss is pulled. Fights without a boss (trash, open
-    /// world mobs) are never shown.
+    /// The running fight when it is against a chosen kind of target (settings: artifact, boss, trash), or the last such
+    /// fight until the next one starts.
     /// </summary>
-    public EncounterSnapshot? BossFight()
+    public EncounterSnapshot? CurrentFight()
     {
         var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        var live = Tracker.Snapshot(null, now);
-        if (live?.Boss is not null)
+        return _fights.Pick(Tracker.Snapshot(null, now), _settings.Targets, id => Tracker.Snapshot(id, now));
+    }
+
+    /// <summary>NPC codes of the artifact-siege targets: the keys of the file's "npcs" object.</summary>
+    private static HashSet<int> LoadArtifactNpcs(string path)
+    {
+        try
         {
-            _lastBossFight = live.Id;
-            return live;
+            using var doc = JsonDocument.Parse(File.ReadAllText(path));
+            return doc.RootElement.GetProperty("npcs").EnumerateObject()
+                .Select(p => int.TryParse(p.Name, out var code) ? code : 0)
+                .Where(code => code > 0)
+                .ToHashSet();
         }
-        return _lastBossFight is { } id ? Tracker.Snapshot(id, now) : null;
+        catch (Exception ex) when (ex is IOException or JsonException or KeyNotFoundException or InvalidOperationException)
+        {
+            return [];
+        }
     }
 
     public void Dispose()
