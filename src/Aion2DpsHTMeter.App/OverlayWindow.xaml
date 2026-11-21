@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:Aion2DpsHTMeter.App.ViewModels"
         Title="Aion2DpsHTMeter"
-        Width="400" SizeToContent="Height"
+        Width="250" SizeToContent="Height"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         ResizeMode="NoResize" Topmost="True" ShowInTaskbar="False" ShowActivated="False"
         FontFamily="{StaticResource UiFont}" Foreground="{StaticResource TextStrong}">
@@ -17,6 +17,13 @@
             <Setter Property="StrokeLineJoin" Value="Round" />
         </Style>
 
+        <!-- Header icon buttons, smaller than the shared ones to fit the narrow panel -->
+        <Style x:Key="SmallIconButton" TargetType="Button" BasedOn="{StaticResource IconButton}">
+            <Setter Property="Width" Value="20" />
+            <Setter Property="Height" Value="20" />
+            <Setter Property="Margin" Value="3,0,0,0" />
+        </Style>
+
         <Style x:Key="HideWhenEmpty" TargetType="TextBlock">
             <Style.Triggers>
                 <Trigger Property="Text" Value="">
@@ -25,44 +32,54 @@
             </Style.Triggers>
         </Style>
 
+        <Style x:Key="Number" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource NumberFont}" />
+            <Setter Property="FontSize" Value="9" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <!--
+        One row, 20 px tall: the damage (12), healing (4) and damage-taken (4) bars stacked without gaps, and over all
+        three the name on the left and the values on the right, in one line.
+        -->
         <DataTemplate x:Key="PlayerRow" DataType="{x:Type vm:PlayerRowViewModel}">
             <Border x:Name="Row" BorderBrush="#8C000000" BorderThickness="0,0,0,1" Background="Transparent">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="18" />
+                        <ColumnDefinition Width="14" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
 
                     <!-- Class bar with the rank on it -->
                     <Border Grid.Column="0" Background="{Binding ClassBrush}">
-                        <TextBlock Text="{Binding Rank}" FontFamily="{StaticResource NumberFont}" FontSize="12" FontWeight="Bold"
+                        <TextBlock Text="{Binding Rank}" FontFamily="{StaticResource NumberFont}" FontSize="10" FontWeight="Bold"
                                    Foreground="#0C0E14" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
 
-                    <StackPanel Grid.Column="1">
-                        <!-- DPS bar (3) with the name and the three values on top -->
-                        <Grid Height="24">
-                            <ProgressBar Style="{StaticResource MeterBar}" Value="{Binding DpsBar, Mode=OneWay}" Foreground="{StaticResource DpsBar}" />
-                            <DockPanel Margin="8,0" LastChildFill="True">
-                                <DockPanel.Effect>
-                                    <DropShadowEffect ShadowDepth="1" BlurRadius="2" Opacity="0.8" Color="Black" />
-                                </DockPanel.Effect>
-                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding DpsText}" FontFamily="{StaticResource NumberFont}" FontSize="12" FontWeight="Bold" Foreground="White" />
-                                    <TextBlock Text="{Binding HealText}" FontFamily="{StaticResource NumberFont}" FontSize="11" Foreground="{StaticResource HealText}" Margin="6,0,0,0" />
-                                    <TextBlock Text="{Binding TakenText}" FontFamily="{StaticResource NumberFont}" FontSize="11" Foreground="{StaticResource TakenText}" Margin="6,0,0,0" />
-                                </StackPanel>
-                                <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="Bold" Foreground="White"
-                                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                            </DockPanel>
+                    <Grid Grid.Column="1">
+                        <StackPanel>
+                            <ProgressBar Height="12" Style="{StaticResource MeterBar}" Value="{Binding DamageBar, Mode=OneWay}" Foreground="{StaticResource DpsBar}" />
+                            <ProgressBar Height="4" Style="{StaticResource MeterBar}" Value="{Binding HealBar, Mode=OneWay}" Foreground="{StaticResource HealBar}" />
+                            <ProgressBar Height="4" Style="{StaticResource MeterBar}" Value="{Binding TakenBar, Mode=OneWay}" Foreground="{StaticResource TakenBar}" />
+                        </StackPanel>
+
+                        <Grid Margin="4,0">
+                            <Grid.Effect>
+                                <DropShadowEffect ShadowDepth="1" BlurRadius="2" Opacity="0.9" Color="Black" />
+                            </Grid.Effect>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="{Binding Name}" FontSize="11" FontWeight="Bold" Foreground="White"
+                                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="4,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding DpsText}" Style="{StaticResource Number}" FontWeight="Bold" Foreground="White" />
+                                <TextBlock Text="{Binding HealText}" Style="{StaticResource Number}" FontWeight="Bold" Foreground="{StaticResource HealText}" Margin="5,0,0,0" />
+                                <TextBlock Text="{Binding TakenText}" Style="{StaticResource Number}" FontWeight="Bold" Foreground="{StaticResource TakenText}" Margin="5,0,0,0" />
+                            </StackPanel>
                         </Grid>
-
-                        <!-- Healing bar (1) -->
-                        <ProgressBar Height="8" Style="{StaticResource MeterBar}" Value="{Binding HealBar, Mode=OneWay}" Foreground="{StaticResource HealBar}" />
-
-                        <!-- Damage-taken bar (1) -->
-                        <ProgressBar Height="8" Style="{StaticResource MeterBar}" Value="{Binding TakenBar, Mode=OneWay}" Foreground="{StaticResource TakenBar}" />
-                    </StackPanel>
+                    </Grid>
                 </Grid>
             </Border>
             <DataTemplate.Triggers>
@@ -73,93 +90,102 @@
         </DataTemplate>
     </Window.Resources>
 
-    <Border Background="{Binding PanelBackground}" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="8">
+    <Border Background="{Binding PanelBackground}" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="6">
         <StackPanel>
-            <!-- Header: boss, clock, buttons, HP, sort -->
-            <Border Background="#0AFFFFFF" BorderBrush="#14FFFFFF" BorderThickness="0,0,0,1" Padding="12,10"
+            <!-- Header: boss and buttons, HP and kill time, sort and who is shown -->
+            <Border Background="#0AFFFFFF" BorderBrush="#14FFFFFF" BorderThickness="0,0,0,1" Padding="6,5"
                     MouseLeftButtonDown="OnHeaderMouseDown">
                 <StackPanel>
                     <DockPanel>
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding Clock}" FontFamily="{StaticResource NumberFont}" FontSize="13" FontWeight="Bold"
-                                       VerticalAlignment="Center" Margin="0,0,2,0" />
-                            <Button x:Name="ClickThroughButton" Style="{StaticResource IconButton}" Click="OnClickThrough"
+                            <Button x:Name="ClickThroughButton" Style="{StaticResource SmallIconButton}" Click="OnClickThrough"
                                     ToolTip="クリックスルー切替(Ctrl+Shift+L)" AutomationProperties.Name="クリックスルー切替">
-                                <Viewbox Width="14" Height="14">
+                                <Viewbox Width="10" Height="10">
                                     <Path Style="{StaticResource IconPath}" Data="M5,11 H19 V21 H5 Z M8,11 V7 A4,4 0 0 1 16,7 V11" Width="24" Height="24" />
                                 </Viewbox>
                             </Button>
-                            <Button Style="{StaticResource IconButton}" Click="OnReset" ToolTip="計測リセット" AutomationProperties.Name="計測リセット">
-                                <Viewbox Width="14" Height="14">
+                            <Button Style="{StaticResource SmallIconButton}" Click="OnReset" ToolTip="計測リセット" AutomationProperties.Name="計測リセット">
+                                <Viewbox Width="10" Height="10">
                                     <Path Style="{StaticResource IconPath}" Data="M3,12 A9,9 0 1 0 6,5.3 M3,4 V9 H8" Width="24" Height="24" />
                                 </Viewbox>
                             </Button>
-                            <Button Style="{StaticResource IconButton}" IsEnabled="False" ToolTip="設定(未実装)" AutomationProperties.Name="設定">
-                                <Viewbox Width="14" Height="14">
+                            <Button Style="{StaticResource SmallIconButton}" Click="OnSettings" ToolTip="設定" AutomationProperties.Name="設定">
+                                <Viewbox Width="10" Height="10">
                                     <Path Style="{StaticResource IconPath}" Width="24" Height="24"
                                           Data="M12,9 A3,3 0 1 0 12,15 A3,3 0 1 0 12,9 Z M12,2 V5 M12,19 V22 M2,12 H5 M19,12 H22 M4.9,4.9 L7,7 M17,17 L19.1,19.1 M4.9,19.1 L7,17 M17,7 L19.1,4.9" />
                                 </Viewbox>
                             </Button>
-                            <Button Style="{StaticResource IconButton}" Click="OnClose" ToolTip="終了" AutomationProperties.Name="終了">
-                                <Viewbox Width="12" Height="12">
+                            <Button Style="{StaticResource SmallIconButton}" Click="OnClose" ToolTip="終了" AutomationProperties.Name="終了">
+                                <Viewbox Width="9" Height="9">
                                     <Path Style="{StaticResource IconPath}" Data="M6,6 L18,18 M18,6 L6,18" Width="24" Height="24" />
                                 </Viewbox>
                             </Button>
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="BOSS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding BossName}" FontSize="14" FontWeight="Bold" Margin="8,0,0,0" VerticalAlignment="Center"
-                                       TextTrimming="CharacterEllipsis" MaxWidth="170" />
+                        <TextBlock Text="{Binding BossName}" FontSize="12" FontWeight="Bold" VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis" />
+                    </DockPanel>
+
+                    <DockPanel Margin="0,4,0,0">
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Margin="6,0,0,0">
+                            <TextBlock Text="{Binding ClockLabel}" FontSize="9" Foreground="{StaticResource TextMuted}"
+                                       VerticalAlignment="Center" Margin="0,0,4,0" />
+                            <TextBlock Text="{Binding Clock}" FontFamily="{StaticResource NumberFont}" FontSize="11" FontWeight="Bold"
+                                       VerticalAlignment="Center" />
                         </StackPanel>
+                        <TextBlock DockPanel.Dock="Right" Text="{Binding BossHpText}" Style="{StaticResource Number}"
+                                   Foreground="#C3C9D6" Margin="4,0,0,0" />
+                        <ProgressBar Height="4" Value="{Binding BossHp, Mode=OneWay}"
+                                     Foreground="#D9534F" Background="#1AFFFFFF" VerticalAlignment="Center">
+                            <ProgressBar.Style>
+                                <Style TargetType="ProgressBar" BasedOn="{StaticResource MeterBar}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasBoss}" Value="False">
+                                            <Setter Property="Visibility" Value="Hidden" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ProgressBar.Style>
+                        </ProgressBar>
                     </DockPanel>
 
-                    <DockPanel Margin="0,6,0,0">
-                        <DockPanel.Style>
-                            <Style TargetType="DockPanel">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding HasBoss}" Value="False">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </DockPanel.Style>
-                        <TextBlock DockPanel.Dock="Right" Text="{Binding BossHpText}" FontFamily="{StaticResource NumberFont}" FontSize="11"
-                                   Foreground="#C3C9D6" Margin="8,0,0,0" />
-                        <ProgressBar Height="6" Style="{StaticResource MeterBar}" Value="{Binding BossHp, Mode=OneWay}"
-                                     Foreground="#D9534F" Background="#1AFFFFFF" VerticalAlignment="Center" />
-                    </DockPanel>
-
-                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                        <Label Content="並び順" Target="{Binding ElementName=SortBox}" Foreground="{StaticResource TextMuted}" FontSize="11"
-                               Padding="0" VerticalAlignment="Center" />
-                        <ComboBox x:Name="SortBox" ItemsSource="{Binding SortOptions}" SelectedItem="{Binding Sort}" DisplayMemberPath="Label"
-                                  MinWidth="140" Height="26" FontSize="12" Margin="8,0,0,0" />
-                        <CheckBox Content="PTメンバーのみ" IsChecked="{Binding PartyOnly}" Foreground="{StaticResource TextMuted}"
-                                  FontSize="11" Margin="12,0,0,0" VerticalAlignment="Center" />
-                    </StackPanel>
+                    <!-- Who is shown on the left, sort order on the right, half the width each -->
+                    <UniformGrid Columns="2" Margin="0,4,0,0">
+                        <Button Style="{StaticResource PillButton}" Content="{Binding ScopeLabel}" Click="OnNextScope"
+                                Height="22" Padding="8,0" FontSize="10" Margin="0,0,2,0" HorizontalContentAlignment="Left"
+                                ToolTip="表示する人: 全体 → フォース → パーティー" AutomationProperties.Name="表示する人の切り替え" />
+                        <ComboBox Style="{StaticResource DarkComboBox}" ItemsSource="{Binding SortOptions}"
+                                  SelectedItem="{Binding Sort}" DisplayMemberPath="Label" Height="22" FontSize="10" Margin="2,0,0,0"
+                                  AutomationProperties.Name="並び順" ToolTip="並び順" />
+                    </UniformGrid>
                 </StackPanel>
             </Border>
 
-            <TextBlock Text="{Binding Status}" Style="{StaticResource HideWhenEmpty}" Margin="12,10" FontSize="12"
+            <TextBlock Text="{Binding Status}" Style="{StaticResource HideWhenEmpty}" Margin="6,5" FontSize="10"
                        Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
 
             <ItemsControl ItemsSource="{Binding Players}" ItemTemplate="{StaticResource PlayerRow}" />
 
-            <!-- Party totals -->
-            <UniformGrid Columns="3" Background="#0AFFFFFF">
-                <StackPanel Margin="12,8">
-                    <TextBlock Text="DPS/合計ダメージ" FontSize="10" Foreground="{StaticResource TextMuted}" />
-                    <TextBlock Text="{Binding TotalDps}" FontFamily="{StaticResource NumberFont}" FontSize="12" FontWeight="Bold" Foreground="{StaticResource DpsText}" />
-                </StackPanel>
-                <StackPanel Margin="12,8">
-                    <TextBlock Text="PT合計 回復" FontSize="10" Foreground="{StaticResource TextMuted}" />
-                    <TextBlock Text="{Binding TotalHeal}" FontFamily="{StaticResource NumberFont}" FontSize="12" FontWeight="Bold" Foreground="{StaticResource HealText}" />
-                </StackPanel>
-                <StackPanel Margin="12,8">
-                    <TextBlock Text="PT合計 被ダメ" FontSize="10" Foreground="{StaticResource TextMuted}" />
-                    <TextBlock Text="{Binding TotalTaken}" FontFamily="{StaticResource NumberFont}" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TakenText}" />
-                </StackPanel>
-            </UniformGrid>
+            <!-- Totals of the rows shown, one per line -->
+            <Grid Background="#0AFFFFFF">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition />
+                    <RowDefinition />
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Text="合計 DPS/ダメージ" FontSize="9" Foreground="{StaticResource TextMuted}" Margin="6,4,0,0" />
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding TotalDps}" Style="{StaticResource Number}" FontWeight="Bold"
+                           Foreground="{StaticResource DpsText}" Margin="0,4,6,0" />
+                <TextBlock Grid.Row="1" Text="合計 回復" FontSize="9" Foreground="{StaticResource TextMuted}" Margin="6,1,0,0" />
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding TotalHeal}" Style="{StaticResource Number}" FontWeight="Bold"
+                           Foreground="{StaticResource HealText}" Margin="0,1,6,0" />
+                <TextBlock Grid.Row="2" Text="合計 被ダメ" FontSize="9" Foreground="{StaticResource TextMuted}" Margin="6,1,0,4" />
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding TotalTaken}" Style="{StaticResource Number}" FontWeight="Bold"
+                           Foreground="{StaticResource TakenText}" Margin="0,1,6,4" />
+            </Grid>
         </StackPanel>
     </Border>
 </Window>

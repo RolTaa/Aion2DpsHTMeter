@@ -20,8 +20,11 @@ public sealed class OverlayViewModel : ObservableObject
     /// <summary>The row of each player in the fight, by actor id.</summary>
     private readonly Dictionary<uint, PlayerRowViewModel> _rows = [];
 
+    private readonly KillTimeEstimator _killTime = new();
+
     private string _bossName = "";
-    private string _clock = "00:00";
+    private string _clockLabel = "";
+    private string _clock = "--:--";
     private bool _hasBoss;
     private double _bossHp;
     private string _bossHpText = "";
@@ -59,14 +62,54 @@ public sealed class OverlayViewModel : ObservableObject
         }
     }
 
-    public bool PartyOnly
+    /// <summary>Whose rows are shown; the header button steps through all → force → party.</summary>
+    public MemberScope Scope
     {
-        get => _settings.PartyOnly;
+        get => _settings.MemberScope;
+        private set
+        {
+            _settings.MemberScope = value;
+            Raise();
+            Raise(nameof(ScopeLabel));
+            Refresh();
+        }
+    }
+
+    public string ScopeLabel => Scope switch
+    {
+        MemberScope.Force => "フォース",
+        MemberScope.Party => "パーティー",
+        _ => "全体",
+    };
+
+    public void NextScope() => Scope = Scope switch
+    {
+        MemberScope.All => MemberScope.Force,
+        MemberScope.Force => MemberScope.Party,
+        _ => MemberScope.All,
+    };
+
+    // Measurement targets, for the settings window.
+    public bool TargetArtifact { get => HasTarget(TargetKinds.AbyssArtifact); set => SetTarget(TargetKinds.AbyssArtifact, value); }
+    public bool TargetBoss { get => HasTarget(TargetKinds.Boss); set => SetTarget(TargetKinds.Boss, value); }
+    public bool TargetTrash { get => HasTarget(TargetKinds.Trash); set => SetTarget(TargetKinds.Trash, value); }
+
+    private bool HasTarget(TargetKinds kind) => (_settings.Targets & kind) != 0;
+
+    private void SetTarget(TargetKinds kind, bool on)
+    {
+        _settings.Targets = on ? _settings.Targets | kind : _settings.Targets & ~kind;
+        Refresh();
+    }
+
+    /// <summary>Background opacity of the panel, 0.4–1.</summary>
+    public double Opacity
+    {
+        get => _settings.Opacity;
         set
         {
-            if (_settings.PartyOnly == value) return;
-            _settings.PartyOnly = value;
-            Refresh();
+            SetOpacity(value);
+            Raise();
         }
     }
 
@@ -75,6 +118,8 @@ public sealed class OverlayViewModel : ObservableObject
 
     public Brush PanelBackground { get => _panelBackground; private set => Set(ref _panelBackground, value); }
     public string BossName { get => _bossName; private set => Set(ref _bossName, value); }
+    /// <summary>What the clock shows: 撃破予測 (time left to kill), 撃破 / 終了 (fight length), 経過 (no boss).</summary>
+    public string ClockLabel { get => _clockLabel; private set => Set(ref _clockLabel, value); }
     public string Clock { get => _clock; private set => Set(ref _clock, value); }
     public bool HasBoss { get => _hasBoss; private set => Set(ref _hasBoss, value); }
     /// <summary>Boss HP, 0–1.</summary>
@@ -86,8 +131,7 @@ public sealed class OverlayViewModel : ObservableObject
     public string TotalHeal { get => _totalHeal; private set => Set(ref _totalHeal, value); }
     public string TotalTaken { get => _totalTaken; private set => Set(ref _totalTaken, value); }
 
-    /// <summary>Background opacity of the panel, 0.4–1 (also called by the settings window).</summary>
-    public void SetOpacity(double opacity)
+    private void SetOpacity(double opacity)
     {
         _settings.Opacity = Math.Clamp(opacity, 0.4, 1);
         var brush = new SolidColorBrush(Color.FromArgb((byte)Math.Round(_settings.Opacity * 255), 0x0C, 0x0E, 0x14));
@@ -104,33 +148,46 @@ public sealed class OverlayViewModel : ObservableObject
     private void Refresh()
     {
         _meter.Tick();
-        var snap = _meter.BossFight();
+        var snap = _meter.CurrentFight();
         if (snap is null)
         {
             ShowEmpty();
             return;
         }
 
-        Status = "";
-        Clock = Format.Clock(snap.CombatMs);
+        Status = Scope != MemberScope.All && !_meter.DemoRunning && !_meter.Party.Known
+            ? "パーティ情報をまだ受信していないため、自分だけを表示しています"
+            : "";
+        (ClockLabel, Clock) = ClockOf(snap);
         HasBoss = snap.Boss is not null;
         BossName = snap.Boss?.Name ?? snap.Title;
         BossHp = snap.Boss?.HpFraction ?? 0;
         BossHpText = HasBoss ? "HP " + Format.Percent(BossHp) : "";
 
-        var shown = PartyOnly ? snap.Combatants.Where(_meter.IsPartyMember) : snap.Combatants;
-        var combatants = SortBy(shown, _sort.Key);
+        var combatants = SortBy(snap.Combatants.Where(IsShown), _sort.Key);
         UpdateRows(combatants);
         TotalDps = PlayerRowViewModel.Kilo(combatants.Sum(c => c.Dps)) + "/" + PlayerRowViewModel.WholeKilo(combatants.Sum(c => c.Damage));
         TotalHeal = PlayerRowViewModel.Kilo(combatants.Sum(c => c.Healing));
         TotalTaken = PlayerRowViewModel.Kilo(combatants.Sum(c => c.DamageTaken));
     }
 
+    /// <summary>Everyone, or the local player and the force / party members on the roster.</summary>
+    private bool IsShown(CombatantSnapshot c) => _meter.DemoRunning || _meter.Party.Includes(c, Scope);
+
+    private (string Label, string Value) ClockOf(EncounterSnapshot fight)
+    {
+        if (fight.Boss is not { } boss) return ("経過", Format.Clock(fight.CombatMs));
+        if (boss.Hp <= 0) return ("撃破", Format.Clock(fight.CombatMs));
+        if (!fight.IsActive) return ("終了", Format.Clock(fight.CombatMs));
+        var left = _killTime.Update(fight.Id, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), boss.Hp);
+        return ("撃破予測", left is { } t ? Format.Clock((long)t.TotalMilliseconds) : "--:--");
+    }
+
     /// <summary>Updates each player's row in place and puts the rows in the given order.</summary>
     private void UpdateRows(List<CombatantSnapshot> combatants)
     {
         var max = new PartyMax(
-            combatants.Select(c => c.Dps).DefaultIfEmpty().Max(),
+            combatants.Select(c => c.Damage).DefaultIfEmpty().Max(),
             combatants.Select(c => c.Healing).DefaultIfEmpty().Max(),
             combatants.Select(c => c.DamageTaken).DefaultIfEmpty().Max());
 
@@ -167,8 +224,9 @@ public sealed class OverlayViewModel : ObservableObject
         _rows.Clear();
         Players.Clear();
         var capture = _meter.CaptureStatus;
-        Status = capture.State == CaptureState.Capturing ? "ボス戦の開始を待っています" : capture.Message;
-        Clock = "00:00";
+        Status = capture.State == CaptureState.Capturing ? "計測対象との戦闘を待っています" : capture.Message;
+        ClockLabel = "";
+        Clock = "--:--";
         HasBoss = false;
         BossName = "";
         BossHp = 0;

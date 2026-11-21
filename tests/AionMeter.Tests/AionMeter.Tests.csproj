@@ -23,4 +23,11 @@
     <ProjectReference Include="..\..\src\AionMeter.Core\AionMeter.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Aion2DpsHTMeter: WPF-free app logic, compiled in here because the app itself targets Windows only. -->
+    <Compile Include="..\..\src\Aion2DpsHTMeter.App\Services\PartyRoster.cs" Link="App\PartyRoster.cs" />
+    <Compile Include="..\..\src\Aion2DpsHTMeter.App\Services\FightFilter.cs" Link="App\FightFilter.cs" />
+    <Compile Include="..\..\src\Aion2DpsHTMeter.App\Services\KillTimeEstimator.cs" Link="App\KillTimeEstimator.cs" />
+  </ItemGroup>
+
 </Project>

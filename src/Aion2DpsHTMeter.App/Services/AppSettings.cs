@@ -28,8 +28,11 @@ public sealed class AppSettings
 
     public SortKey SortKey { get; set; } = SortKey.Dps;
 
-    /// <summary>Show only the local player and the party members (other players fighting the same boss are hidden).</summary>
-    public bool PartyOnly { get; set; } = true;
+    /// <summary>Whose rows are shown: everyone, the force, or the own party.</summary>
+    public MemberScope MemberScope { get; set; } = MemberScope.Party;
+
+    /// <summary>Which fights are measured and shown.</summary>
+    public TargetKinds Targets { get; set; } = TargetKinds.AbyssArtifact | TargetKinds.Boss;
 
     /// <summary>Npcap device to force (VPN / ping accelerator users). Null = pick from the game's connections.</summary>
     public string? CaptureDevice { get; set; }

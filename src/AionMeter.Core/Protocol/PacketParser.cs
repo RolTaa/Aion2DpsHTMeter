@@ -625,7 +625,7 @@ public sealed class PacketParser
             var power = BinaryPrimitives.ReadUInt64LittleEndian(b[(anchor + 5)..]);
             if (power > MaxCombatPower) break;
             o = anchor + 5 + 8;
-            members.Add(new PartyMemberInfo(name, server, (int)level, gear is >= 1 and <= 50_000 ? (int)gear : 0, (long)power, cls));
+            members.Add(new PartyMemberInfo(name, server, (int)level, gear is >= 1 and <= 50_000 ? (int)gear : 0, (long)power, cls, slot));
 
             if (i + 1 == count) break;
             var nextMember = FindRosterMember(b, o, (byte)(slot + 1));

@@ -1,0 +1,16 @@
+{
+  "note": "Aion2DpsHTMeter: NPCs counted as Abyss artifact-siege targets. Provisional: the Abyss guardian lords (守護神将), picked by name from npcs/en.json until checked in game. Add or remove NPC codes as needed.",
+  "npcs": {
+    "2600084": "守護神将ナフマ",
+    "2600093": "守護神将ナフマ",
+    "2600094": "守護神将ナフマ",
+    "2600150": "怒りの守護神将ナフマ",
+    "2600156": "怒りの守護神将ナフマ",
+    "2600387": "守護神将フラサーダ",
+    "2600478": "怒りの守護神将ナフマ",
+    "2600479": "怒りの守護神将ナフマ",
+    "2600480": "怒りの守護神将ナフマ",
+    "2670115": "亀裂の守護神将マハバリ",
+    "2670116": "亀裂の守護神将タマパラ"
+  }
+}

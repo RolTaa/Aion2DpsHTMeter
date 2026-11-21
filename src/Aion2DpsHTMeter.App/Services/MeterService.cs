@@ -1,4 +1,5 @@
 using System.IO;
+using System.Text.Json;
 using AionMeter.Core.Capture;
 using AionMeter.Core.Combat;
 using AionMeter.Core.Demo;
@@ -10,35 +11,32 @@ namespace Aion2DpsHTMeter.App.Services;
 /// <summary>Owns the capture → decoder → combat tracker pipeline (all from AionMeter.Core).</summary>
 public sealed class MeterService : IDisposable
 {
-    /// <summary>The server resends the roster every few seconds; one older than this means we left the party.</summary>
-    private static readonly TimeSpan RosterLifetime = TimeSpan.FromSeconds(60);
-
     private readonly AppSettings _settings;
     private IEventSource? _capture;
     private DemoFightSource? _demo;
 
-    private readonly object _partyGate = new();
-    private IReadOnlyList<PartyMemberInfo> _party = [];
-    private DateTime _partySeenAt;
-
-    /// <summary>The last fight that had a boss: shown until the next boss fight starts.</summary>
-    private Guid? _lastBossFight;
+    private readonly FightFilter _fights;
 
     public MeterService(AppSettings settings)
     {
         _settings = settings;
         Data = GameData.Load(DataDirectory);
         Tracker = new CombatTracker(Data, new MeterOptions());
-        Tracker.RosterReceived += OnRoster;
+        _fights = new FightFilter(LoadArtifactNpcs(Path.Combine(DataDirectory, "abyss_artifact_npcs.json")));
+        Tracker.RosterReceived += roster => Party.Update(roster, Tracker.SelfName);
     }
 
     public static string DataDirectory { get; } = Path.Combine(AppContext.BaseDirectory, "data");
 
     public GameData Data { get; }
     public CombatTracker Tracker { get; }
+    public PartyRoster Party { get; } = new();
+
+    /// <summary>The demo fight sends no roster: everyone in it counts as party.</summary>
+    public bool DemoRunning => _demo?.IsRunning == true;
 
     public CaptureStatus CaptureStatus =>
-        _demo?.IsRunning == true ? new CaptureStatus(CaptureState.Capturing, "Demo")
+        DemoRunning ? new CaptureStatus(CaptureState.Capturing, "Demo")
         : _capture?.Status ?? CaptureStatus.Stopped;
 
     public void StartCapture()
@@ -69,49 +67,40 @@ public sealed class MeterService : IDisposable
         _demo.Start(TimeSpan.FromSeconds(seconds));
     }
 
-    /// <summary>Closes the running fight; the view stays empty until the next boss fight.</summary>
+    /// <summary>Closes the running fight; the view stays empty until the next fight of a chosen kind.</summary>
     public void Reset()
     {
         Tracker.Reset();
-        _lastBossFight = null;
+        _fights.Forget();
     }
 
     /// <summary>Idle checks (fight end by timeout) run on the wall clock; call this from the UI timer.</summary>
     public void Tick() => Tracker.Tick(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
 
     /// <summary>
-    /// The running boss fight, or the last one until the next boss is pulled. Fights without a boss (trash, open
-    /// world mobs) are never shown.
+    /// The running fight when it is against a chosen kind of target (settings: artifact, boss, trash), or the last such
+    /// fight until the next one starts.
     /// </summary>
-    public EncounterSnapshot? BossFight()
+    public EncounterSnapshot? CurrentFight()
     {
         var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        var live = Tracker.Snapshot(null, now);
-        if (live?.Boss is not null)
-        {
-            _lastBossFight = live.Id;
-            return live;
-        }
-        return _lastBossFight is { } id ? Tracker.Snapshot(id, now) : null;
+        return _fights.Pick(Tracker.Snapshot(null, now), _settings.Targets, id => Tracker.Snapshot(id, now));
     }
 
-    /// <summary>The local player, and the players on the latest party roster (by name, and server when both are known).</summary>
-    public bool IsPartyMember(CombatantSnapshot c)
+    /// <summary>NPC codes of the artifact-siege targets: the keys of the file's "npcs" object.</summary>
+    private static HashSet<int> LoadArtifactNpcs(string path)
     {
-        if (c.IsSelf || _demo?.IsRunning == true) return true; // the demo fight sends no roster
-        lock (_partyGate)
+        try
         {
-            if (DateTime.UtcNow - _partySeenAt > RosterLifetime) return false;
-            return _party.Any(m => m.Name == c.Name && (m.ServerId == 0 || c.ServerId == 0 || m.ServerId == c.ServerId));
+            using var doc = JsonDocument.Parse(File.ReadAllText(path));
+            return doc.RootElement.GetProperty("npcs").EnumerateObject()
+                .Select(p => int.TryParse(p.Name, out var code) ? code : 0)
+                .Where(code => code > 0)
+                .ToHashSet();
         }
-    }
-
-    private void OnRoster(PartyRosterEvent roster)
-    {
-        lock (_partyGate)
+        catch (Exception ex) when (ex is IOException or JsonException or KeyNotFoundException or InvalidOperationException)
         {
-            _party = roster.Members;
-            _partySeenAt = DateTime.UtcNow;
+            return [];
         }
     }
 

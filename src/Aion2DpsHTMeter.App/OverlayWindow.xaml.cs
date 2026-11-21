@@ -44,5 +44,9 @@ public partial class OverlayWindow : Window
 
     private void OnReset(object sender, RoutedEventArgs e) => _vm.Reset();
 
+    private void OnNextScope(object sender, RoutedEventArgs e) => _vm.NextScope();
+
+    private void OnSettings(object sender, RoutedEventArgs e) => new SettingsWindow(_vm) { Owner = this }.ShowDialog();
+
     private void OnClose(object sender, RoutedEventArgs e) => Close();
 }
