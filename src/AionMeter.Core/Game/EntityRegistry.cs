@@ -1,4 +1,4 @@
-using AionMeter.Core.Events;
+﻿using AionMeter.Core.Events;
 
 namespace AionMeter.Core.Game;
 
@@ -261,6 +261,9 @@ public sealed class EntityRegistry
     public bool TryGetNpc(uint actorId, out NpcInfo npc) => _npcs.TryGetValue(actorId, out npc!);
     public bool IsKnownPlayer(uint actorId) => _players.ContainsKey(actorId);
     public bool IsKnownNpc(uint actorId) => _npcs.ContainsKey(actorId);
+
+    /// <summary>Aion2DpsHTMeter: the NPCs known on this map with one of these templates.</summary>
+    public IEnumerable<NpcInfo> NpcsWithCode(IReadOnlySet<int> npcCodes) => _npcs.Values.Where(n => npcCodes.Contains(n.NpcCode));
     public bool IsSummon(uint actorId) => _summonOwner.ContainsKey(actorId);
 
     /// <summary>Follows summon → owner links (pets, spirits, totems) so their damage is credited to the player.</summary>

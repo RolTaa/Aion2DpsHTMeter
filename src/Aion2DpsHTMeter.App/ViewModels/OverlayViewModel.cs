@@ -143,23 +143,18 @@ public sealed class OverlayViewModel : ObservableObject
     private void Refresh()
     {
         _meter.Tick();
-        var snap = _meter.CurrentFight();
-        if (snap is null)
+        var fight = _meter.CurrentFight();
+        // The header follows a Dimensional Core on the map first (hit or not), else the fight's main target: the NPC
+        // with the most HP, the boss when there is one.
+        ShowTarget(_meter.WatchedCore() ?? fight?.Focus ?? fight?.Boss, fight);
+
+        if (fight is null)
         {
-            ShowEmpty();
+            ShowNoFight();
             return;
         }
-
         Status = "";
-        (ClockLabel, Clock) = ClockOf(snap);
-        // The header follows the main target: the NPC with the most HP (the boss when there is one).
-        var target = snap.Focus ?? snap.Boss;
-        HasBoss = target is { Hp: >= 0 };
-        BossName = target?.Name ?? snap.Title;
-        BossHp = target?.HpFraction ?? 0;
-        BossHpText = HasBoss ? Format.Percent(BossHp) : "";
-
-        var combatants = SortBy(snap.Combatants.Where(IsShown), _sort.Key);
+        var combatants = SortBy(fight.Combatants.Where(IsShown), _sort.Key);
         UpdateRows(combatants);
         TotalDps = PlayerRowViewModel.Kilo(combatants.Sum(c => c.RecentDps)) + "/" + PlayerRowViewModel.WholeKilo(combatants.Sum(c => c.FocusDamage));
         TotalHeal = PlayerRowViewModel.Kilo(combatants.Sum(c => c.Healing));
@@ -169,11 +164,25 @@ public sealed class OverlayViewModel : ObservableObject
     /// <summary>Everyone around, or only the local player.</summary>
     private bool IsShown(CombatantSnapshot c) => Scope == MemberScope.Everyone || c.IsSelf;
 
-    private (string Label, string Value) ClockOf(EncounterSnapshot fight)
+    /// <summary>Name, HP and clock of the header's target.</summary>
+    private void ShowTarget(BossSnapshot? target, EncounterSnapshot? fight)
     {
-        if ((fight.Focus ?? fight.Boss) is not { Hp: >= 0 } target) return ("経過", Format.Clock(fight.CombatMs));
-        if (target.Hp == 0) return ("撃破", Format.Clock(fight.CombatMs));
-        if (!fight.IsActive) return ("終了", Format.Clock(fight.CombatMs));
+        HasBoss = target is { Hp: >= 0 };
+        BossName = target?.Name ?? fight?.Title ?? "";
+        BossHp = HasBoss ? target!.HpFraction : 0;
+        BossHpText = HasBoss ? Format.Percent(BossHp) : "";
+        (ClockLabel, Clock) = ClockOf(target, fight);
+    }
+
+    private (string Label, string Value) ClockOf(BossSnapshot? target, EncounterSnapshot? fight)
+    {
+        // The fight's length, when the fight is against this target (or there is no target to time).
+        var fightIsOnTarget = fight is not null && (target is null || (fight.Focus ?? fight.Boss)?.ActorId == target.ActorId);
+        var length = fightIsOnTarget ? Format.Clock(fight!.CombatMs) : "--:--";
+
+        if (target is not { Hp: >= 0 }) return fight is null ? ("", "--:--") : ("経過", length);
+        if (target.Hp == 0) return ("撃破", length);
+        if (fightIsOnTarget && !fight!.IsActive) return ("終了", length);
         var left = _killTime.Update(target.ActorId, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), target.Hp);
         return ("撃破予測", left is { } t ? Format.Clock((long)t.TotalMilliseconds) : "--:--");
     }
@@ -214,18 +223,12 @@ public sealed class OverlayViewModel : ObservableObject
         while (Players.Count > order.Count) Players.RemoveAt(Players.Count - 1);
     }
 
-    private void ShowEmpty()
+    private void ShowNoFight()
     {
         _rows.Clear();
         Players.Clear();
         var capture = _meter.CaptureStatus;
         Status = capture.State == CaptureState.Capturing ? "計測対象との戦闘を待っています" : capture.Message;
-        ClockLabel = "";
-        Clock = "--:--";
-        HasBoss = false;
-        BossName = "";
-        BossHp = 0;
-        BossHpText = "";
         TotalDps = TotalHeal = TotalTaken = "";
     }
 

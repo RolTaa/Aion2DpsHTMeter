@@ -16,13 +16,15 @@ public sealed class MeterService : IDisposable
     private DemoFightSource? _demo;
 
     private readonly FightFilter _fights;
+    private readonly HashSet<int> _artifactNpcs;
 
     public MeterService(AppSettings settings)
     {
         _settings = settings;
         Data = GameData.Load(DataDirectory);
         Tracker = new CombatTracker(Data, new MeterOptions());
-        _fights = new FightFilter(LoadArtifactNpcs(Path.Combine(DataDirectory, "abyss_artifact_npcs.json")));
+        _artifactNpcs = LoadArtifactNpcs(Path.Combine(DataDirectory, "abyss_artifact_npcs.json"));
+        _fights = new FightFilter(_artifactNpcs);
     }
 
     public static string DataDirectory { get; } = Path.Combine(AppContext.BaseDirectory, "data");
@@ -81,6 +83,20 @@ public sealed class MeterService : IDisposable
     {
         var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         return _fights.Pick(Tracker.Snapshot(null, now), _settings.Targets, id => Tracker.Snapshot(id, now));
+    }
+
+    /// <summary>
+    /// With the artifact siege chosen as a target: the Dimensional Core on this map to watch, hit or not. A living one
+    /// before a dead one, and among the living the one with the least HP left (the one being fought over).
+    /// </summary>
+    public BossSnapshot? WatchedCore()
+    {
+        if ((_settings.Targets & TargetKinds.AbyssArtifact) == 0) return null;
+        return Tracker.NpcsOnMap(_artifactNpcs)
+            .Where(core => core.Hp >= 0)
+            .OrderBy(core => core.Hp == 0)
+            .ThenBy(core => core.HpFraction)
+            .FirstOrDefault();
     }
 
     /// <summary>NPC codes of the artifact-siege targets: the keys of the file's "npcs" object.</summary>

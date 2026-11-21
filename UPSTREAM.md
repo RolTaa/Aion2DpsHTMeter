@@ -32,6 +32,8 @@
 | `src/AionMeter.Core/Combat/Encounter.cs` | 対象 NPC ごとのダメージと秒ごとの内訳(`TargetDamage`, `Combatant.ByTarget`)を追加 |
 | `src/AionMeter.Core/Combat/CombatTracker.cs` | ダメージを対象ごとにも記録。スナップショットに主対象(最大HPのNPC)と、主対象へのダメージ・直近60秒のDPSを追加 |
 | `src/AionMeter.Core/Combat/Snapshots.cs` | `CombatantSnapshot` に `FocusDamage` / `RecentDps`、`EncounterSnapshot` に `Focus` を追加(いずれも末尾・既定値あり) |
+| `src/AionMeter.Core/Game/EntityRegistry.cs` | 指定した NPC テンプレートの NPC を列挙する `NpcsWithCode` を追加 |
+| `src/AionMeter.Core/Combat/CombatTracker.cs` | 殴っていない NPC(次元核など)の状態を返す `NpcsOnMap` を追加 |
 | `data/resource_restore_skills.json` | 追加。A2Tools-DPS-Meter `src/data/resource_restore_skills.json`(commit `705287b`)を配列形式に変換 |
 
 ## 上流の更新を取り込む手順

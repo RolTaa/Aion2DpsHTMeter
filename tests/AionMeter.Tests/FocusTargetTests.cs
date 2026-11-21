@@ -63,4 +63,19 @@ public class FocusTargetTests
         var me = t.Snapshot(null, 9_500)!.Combatants.Single(c => c.ActorId == Me);      // seconds 0..9
         Assert.Equal(20_000 / 10.0, me.RecentDps, precision: 6);
     }
+
+    [Fact]
+    public void A_watched_npc_is_reported_from_its_spawn_and_hp_without_being_hit()
+    {
+        const uint Core = 700;
+        const int CoreCode = 2600078;
+        var t = Fight();
+        t.Process(new NpcSeenEvent(0, Core, CoreCode, 9_000_000));
+        t.Process(new NpcHpEvent(1_000, Core, 6_300_000, 9_000_000));
+
+        var core = Assert.Single(t.NpcsOnMap(new HashSet<int> { CoreCode }));
+        Assert.Equal(Core, core.ActorId);
+        Assert.Equal(0.7, core.HpFraction, precision: 6);
+        Assert.Null(t.Snapshot(null, 2_000)); // nobody hit anything: no fight
+    }
 }

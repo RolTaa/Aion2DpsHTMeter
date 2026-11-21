@@ -710,6 +710,20 @@ public sealed class CombatTracker
         }
     }
 
+    /// <summary>
+    /// Aion2DpsHTMeter: the NPCs on this map with one of these templates (e.g. the Abyss Dimensional Cores), with the
+    /// HP last seen, whether or not anyone hit them.
+    /// </summary>
+    public IReadOnlyList<BossSnapshot> NpcsOnMap(IReadOnlySet<int> npcCodes)
+    {
+        lock (_gate)
+        {
+            return _entities.NpcsWithCode(npcCodes)
+                .Select(n => new BossSnapshot(n.ActorId, n.NpcCode, _entities.NpcName(n.ActorId), n.Hp, n.MaxHp, n.MaxHpKnown))
+                .ToList();
+        }
+    }
+
     public CombatantDetail? Detail(Guid? segmentId, uint actorId)
     {
         lock (_gate)
