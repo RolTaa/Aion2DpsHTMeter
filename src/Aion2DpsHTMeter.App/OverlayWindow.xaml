@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:Aion2DpsHTMeter.App.ViewModels"
         Title="Aion2DpsHTMeter"
-        Width="250" SizeToContent="Height"
+        Width="300" SizeToContent="Height"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         ResizeMode="NoResize" Topmost="True" ShowInTaskbar="False" ShowActivated="False"
         FontFamily="{StaticResource UiFont}" Foreground="{StaticResource TextStrong}">
@@ -39,8 +39,8 @@
         </Style>
 
         <!--
-        One row, 20 px tall: the damage (12), healing (4) and damage-taken (4) bars stacked without gaps, and over all
-        three the name on the left and the values on the right, in one line.
+        One row, 20 px tall: the damage (16), healing (2) and damage-taken (2) bars stacked without gaps, and over the
+        damage bar the name on the left and the values on the right, in one line.
         -->
         <DataTemplate x:Key="PlayerRow" DataType="{x:Type vm:PlayerRowViewModel}">
             <Border x:Name="Row" BorderBrush="#8C000000" BorderThickness="0,0,0,1" Background="Transparent">
@@ -56,14 +56,11 @@
                                    Foreground="#0C0E14" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
 
-                    <Grid Grid.Column="1">
-                        <StackPanel>
-                            <ProgressBar Height="12" Style="{StaticResource MeterBar}" Value="{Binding DamageBar, Mode=OneWay}" Foreground="{StaticResource DpsBar}" />
-                            <ProgressBar Height="4" Style="{StaticResource MeterBar}" Value="{Binding HealBar, Mode=OneWay}" Foreground="{StaticResource HealBar}" />
-                            <ProgressBar Height="4" Style="{StaticResource MeterBar}" Value="{Binding TakenBar, Mode=OneWay}" Foreground="{StaticResource TakenBar}" />
-                        </StackPanel>
+                    <StackPanel Grid.Column="1">
+                        <Grid Height="16">
+                            <ProgressBar Style="{StaticResource MeterBar}" Value="{Binding DamageBar, Mode=OneWay}" Foreground="{StaticResource DpsBar}" />
 
-                        <Grid Margin="4,0">
+                            <Grid Margin="4,0">
                             <Grid.Effect>
                                 <DropShadowEffect ShadowDepth="1" BlurRadius="2" Opacity="0.9" Color="Black" />
                             </Grid.Effect>
@@ -78,8 +75,11 @@
                                 <TextBlock Text="{Binding HealText}" Style="{StaticResource Number}" FontWeight="Bold" Foreground="{StaticResource HealText}" Margin="5,0,0,0" />
                                 <TextBlock Text="{Binding TakenText}" Style="{StaticResource Number}" FontWeight="Bold" Foreground="{StaticResource TakenText}" Margin="5,0,0,0" />
                             </StackPanel>
+                            </Grid>
                         </Grid>
-                    </Grid>
+                        <ProgressBar Height="2" Style="{StaticResource MeterBar}" Value="{Binding HealBar, Mode=OneWay}" Foreground="{StaticResource HealBar}" />
+                        <ProgressBar Height="2" Style="{StaticResource MeterBar}" Value="{Binding TakenBar, Mode=OneWay}" Foreground="{StaticResource TakenBar}" />
+                    </StackPanel>
                 </Grid>
             </Border>
             <DataTemplate.Triggers>
