@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:Aion2DpsHTMeter.App.ViewModels"
         Title="Aion2DpsHTMeter"
-        Width="200" SizeToContent="Height"
+        Width="250" SizeToContent="Height"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         ResizeMode="NoResize" Topmost="True" ShowInTaskbar="False" ShowActivated="False"
         FontFamily="{StaticResource UiFont}" Foreground="{StaticResource TextStrong}">
@@ -40,7 +40,7 @@
 
         <!--
         One row, 20 px tall: the damage (12), healing (4) and damage-taken (4) bars stacked without gaps, and over all
-        three the name on the left and the values on the right (damage on the top line, healing and taken below).
+        three the name on the left and the values on the right, in one line.
         -->
         <DataTemplate x:Key="PlayerRow" DataType="{x:Type vm:PlayerRowViewModel}">
             <Border x:Name="Row" BorderBrush="#8C000000" BorderThickness="0,0,0,1" Background="Transparent">
@@ -73,13 +73,10 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="{Binding Name}" FontSize="11" FontWeight="Bold" Foreground="White"
                                        VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                            <StackPanel Grid.Column="1" Margin="4,0,0,0" VerticalAlignment="Center">
-                                <TextBlock Text="{Binding DpsText}" Style="{StaticResource Number}" FontWeight="Bold" Foreground="White"
-                                           HorizontalAlignment="Right" />
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                    <TextBlock Text="{Binding HealText}" Style="{StaticResource Number}" Foreground="{StaticResource HealText}" />
-                                    <TextBlock Text="{Binding TakenText}" Style="{StaticResource Number}" Foreground="{StaticResource TakenText}" Margin="4,0,0,0" />
-                                </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="4,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding DpsText}" Style="{StaticResource Number}" FontWeight="Bold" Foreground="White" />
+                                <TextBlock Text="{Binding HealText}" Style="{StaticResource Number}" FontWeight="Bold" Foreground="{StaticResource HealText}" Margin="5,0,0,0" />
+                                <TextBlock Text="{Binding TakenText}" Style="{StaticResource Number}" FontWeight="Bold" Foreground="{StaticResource TakenText}" Margin="5,0,0,0" />
                             </StackPanel>
                         </Grid>
                     </Grid>
@@ -151,18 +148,15 @@
                         </ProgressBar>
                     </DockPanel>
 
-                    <Grid Margin="0,4,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <ComboBox Grid.Column="0" Style="{StaticResource DarkComboBox}" ItemsSource="{Binding SortOptions}"
-                                  SelectedItem="{Binding Sort}" DisplayMemberPath="Label" Height="22" FontSize="10"
-                                  AutomationProperties.Name="並び順" ToolTip="並び順" />
-                        <Button Grid.Column="1" Style="{StaticResource PillButton}" Content="{Binding ScopeLabel}" Click="OnNextScope"
-                                Height="22" Padding="8,0" FontSize="10" Margin="4,0,0,0"
+                    <!-- Who is shown on the left, sort order on the right, half the width each -->
+                    <UniformGrid Columns="2" Margin="0,4,0,0">
+                        <Button Style="{StaticResource PillButton}" Content="{Binding ScopeLabel}" Click="OnNextScope"
+                                Height="22" Padding="8,0" FontSize="10" Margin="0,0,2,0" HorizontalContentAlignment="Left"
                                 ToolTip="表示する人: 全体 → フォース → パーティー" AutomationProperties.Name="表示する人の切り替え" />
-                    </Grid>
+                        <ComboBox Style="{StaticResource DarkComboBox}" ItemsSource="{Binding SortOptions}"
+                                  SelectedItem="{Binding Sort}" DisplayMemberPath="Label" Height="22" FontSize="10" Margin="2,0,0,0"
+                                  AutomationProperties.Name="並び順" ToolTip="並び順" />
+                    </UniformGrid>
                 </StackPanel>
             </Border>
 
