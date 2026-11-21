@@ -129,14 +129,16 @@
                                      Foreground="#D9534F" Background="#1AFFFFFF" VerticalAlignment="Center" />
                     </DockPanel>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                        <Label Content="並び順" Target="{Binding ElementName=SortBox}" Foreground="{StaticResource TextMuted}" FontSize="11"
-                               Padding="0" VerticalAlignment="Center" />
-                        <ComboBox x:Name="SortBox" ItemsSource="{Binding SortOptions}" SelectedItem="{Binding Sort}" DisplayMemberPath="Label"
-                                  MinWidth="140" Height="26" FontSize="12" Margin="8,0,0,0" />
-                        <CheckBox Content="PTメンバーのみ" IsChecked="{Binding PartyOnly}" Foreground="{StaticResource TextMuted}"
-                                  FontSize="11" Margin="12,0,0,0" VerticalAlignment="Center" />
-                    </StackPanel>
+                    <DockPanel Margin="0,6,0,0">
+                        <ToggleButton DockPanel.Dock="Right" Style="{StaticResource PillToggle}" Content="PTメンバーのみ"
+                                      IsChecked="{Binding PartyOnly}" ToolTip="自分とパーティメンバーだけを表示" />
+                        <StackPanel Orientation="Horizontal">
+                            <Label Content="並び順" Target="{Binding ElementName=SortBox}" Foreground="{StaticResource TextMuted}" FontSize="11"
+                                   Padding="0" VerticalAlignment="Center" />
+                            <ComboBox x:Name="SortBox" Style="{StaticResource DarkComboBox}" ItemsSource="{Binding SortOptions}"
+                                      SelectedItem="{Binding Sort}" DisplayMemberPath="Label" MinWidth="140" Margin="8,0,0,0" />
+                        </StackPanel>
+                    </DockPanel>
                 </StackPanel>
             </Border>
 

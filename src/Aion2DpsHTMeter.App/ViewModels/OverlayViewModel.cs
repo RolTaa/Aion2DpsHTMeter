@@ -66,6 +66,7 @@ public sealed class OverlayViewModel : ObservableObject
         {
             if (_settings.PartyOnly == value) return;
             _settings.PartyOnly = value;
+            Raise();
             Refresh();
         }
     }
@@ -111,20 +112,24 @@ public sealed class OverlayViewModel : ObservableObject
             return;
         }
 
-        Status = "";
+        Status = PartyOnly && !_meter.DemoRunning && !_meter.Party.Known
+            ? "パーティ情報をまだ受信していないため、自分だけを表示しています"
+            : "";
         Clock = Format.Clock(snap.CombatMs);
         HasBoss = snap.Boss is not null;
         BossName = snap.Boss?.Name ?? snap.Title;
         BossHp = snap.Boss?.HpFraction ?? 0;
         BossHpText = HasBoss ? "HP " + Format.Percent(BossHp) : "";
 
-        var shown = PartyOnly ? snap.Combatants.Where(_meter.IsPartyMember) : snap.Combatants;
-        var combatants = SortBy(shown, _sort.Key);
+        var combatants = SortBy(snap.Combatants.Where(IsShown), _sort.Key);
         UpdateRows(combatants);
         TotalDps = PlayerRowViewModel.Kilo(combatants.Sum(c => c.Dps)) + "/" + PlayerRowViewModel.WholeKilo(combatants.Sum(c => c.Damage));
         TotalHeal = PlayerRowViewModel.Kilo(combatants.Sum(c => c.Healing));
         TotalTaken = PlayerRowViewModel.Kilo(combatants.Sum(c => c.DamageTaken));
     }
+
+    /// <summary>Everyone, or with "party only" the local player and the members on the party roster.</summary>
+    private bool IsShown(CombatantSnapshot c) => !PartyOnly || _meter.DemoRunning || _meter.Party.Contains(c);
 
     /// <summary>Updates each player's row in place and puts the rows in the given order.</summary>
     private void UpdateRows(List<CombatantSnapshot> combatants)
