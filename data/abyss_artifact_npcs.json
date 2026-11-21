@@ -1,16 +1,17 @@
 {
-  "note": "Aion2DpsHTMeter: NPCs counted as Abyss artifact-siege targets. Provisional: the Abyss guardian lords (守護神将), picked by name from npcs/en.json until checked in game. Add or remove NPC codes as needed.",
+  "note": "Aion2DpsHTMeter: NPCs counted as Abyss artifact-siege targets: the Dimensional Cores (次元核), one per artifact. List from A2Tools-DPS-Meter src-tauri/src/capture/abyss_cores.rs (commit 705287b, GPL-3.0), which took them from the game's NpcData tables (M_AR*_OrcusGem_*).",
   "npcs": {
-    "2600084": "守護神将ナフマ",
-    "2600093": "守護神将ナフマ",
-    "2600094": "守護神将ナフマ",
-    "2600150": "怒りの守護神将ナフマ",
-    "2600156": "怒りの守護神将ナフマ",
-    "2600387": "守護神将フラサーダ",
-    "2600478": "怒りの守護神将ナフマ",
-    "2600479": "怒りの守護神将ナフマ",
-    "2600480": "怒りの守護神将ナフマ",
-    "2670115": "亀裂の守護神将マハバリ",
-    "2670116": "亀裂の守護神将タマパラ"
+    "2600078": "次元核 / 下層レシャンタ: レシャンタの根",
+    "2600079": "次元核 / 下層レシャンタ(固定の出現位置なし)",
+    "2600080": "次元核 / 下層レシャンタ: 硫黄樹の島",
+    "2600081": "次元核 / 下層レシャンタ: 硫黄樹の島(2体目)",
+    "2600082": "次元核 / 下層レシャンタ: シエルの翼群島",
+    "2600083": "次元核 / 下層レシャンタ: シエルの翼群島(2体目)",
+    "2600151": "次元核 / Abyss_Reshanta_B (ACRA)",
+    "2600152": "次元核 / Abyss_Reshanta_B (ACRA, 2体目)",
+    "2600153": "次元核 / Abyss_Reshanta_B (ACRB)",
+    "2600516": "次元核 / 第2層: レシャンタの根",
+    "2600517": "次元核 / 第2層: 硫黄樹の島",
+    "2600518": "次元核 / 第2層: シエルの翼群島"
   }
 }

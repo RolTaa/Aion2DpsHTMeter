@@ -6,7 +6,7 @@ namespace AionMeter.Tests;
 /// <summary>Aion2DpsHTMeter additions: which fight the overlay shows, and the kill-time estimate.</summary>
 public class OverlayLogicTests
 {
-    private const int Artifact = 2600084, Boss = 2300243, Mob = 2000002;
+    private const int Artifact = 2600078, Boss = 2300243, Mob = 2000002;
 
     private static EncounterSnapshot Fight(int npc, bool boss) => new(
         Guid.NewGuid(), "fight", null, DateTimeOffset.UnixEpoch, 0, 1_000, true, default, 0, 0,

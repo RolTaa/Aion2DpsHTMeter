@@ -7,7 +7,7 @@ namespace Aion2DpsHTMeter.App.Services;
 public enum TargetKinds
 {
     None = 0,
-    /// <summary>The targets of the Abyss artifact siege (listed in data/abyss_artifact_npcs.json).</summary>
+    /// <summary>The Abyss artifact siege: the Dimensional Cores (次元核), listed in data/abyss_artifact_npcs.json.</summary>
     AbyssArtifact = 1,
     Boss = 2,
     /// <summary>Everything else: normal mobs.</summary>
@@ -28,7 +28,7 @@ public sealed class FightFilter
 
     public TargetKinds KindOf(EncounterSnapshot fight)
     {
-        var npc = fight.Boss?.NpcCode ?? fight.TargetCode;
+        var npc = (fight.Boss ?? fight.Focus)?.NpcCode ?? fight.TargetCode;
         if (_artifactNpcs.Contains(npc)) return TargetKinds.AbyssArtifact;
         return fight.Boss is not null ? TargetKinds.Boss : TargetKinds.Trash;
     }

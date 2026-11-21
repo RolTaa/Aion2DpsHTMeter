@@ -52,8 +52,8 @@ WPF プロジェクトは `EnableWindowsTargeting` を有効にしているの�
 
 設定は `%LocalAppData%\Aion2DpsHTMeter\settings.json` に保存されます。
 
-アーティファクト戦の対象 NPC は `data/abyss_artifact_npcs.json` に NPC コードで書いてあります。今は仮に
-アビスの守護神将を入れているので、実際の対象が分かったら追加・削除してください。
+アーティファクト戦の対象は、アーティファクトごとの「次元核」12体です。NPC コードの一覧は `data/abyss_artifact_npcs.json`
+にあり、A2Tools-DPS-Meter がゲームの内部データから特定したものを使っています。
 
 
 ## 構成
